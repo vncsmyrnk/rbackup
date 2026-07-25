@@ -37,8 +37,9 @@
           fileset = pkgs.lib.fileset.unions [
             ./Makefile
             ./completions
-            ./rbackup.elv
+            ./lib
             ./t
+            ./rbackup
           ];
         };
 
@@ -72,7 +73,14 @@
           perl
           yq
           elvish-tap
+          default
         ];
+
+        shellHook = ''
+          export XDG_DATA_DIRS="${default}/share:$XDG_DATA_DIRS"
+          export RBACKUP_RCLONE_REMOTE="name:folder"
+          export RBACKUP_ENCRYPT_PASSWORD="password"
+        '';
       };
     in
     {

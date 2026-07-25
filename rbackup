@@ -1,0 +1,37 @@
+#!/usr/bin/env elvish
+# vim: set ft=elvish:
+
+use rbackup/flag rbackup-flag
+use rbackup/rclone
+
+var subcommands = [
+  &generate={|paths opts|
+    if (== (count $paths) 0) {
+      fail "you need to specify a path."
+    }
+    rclone:backup $paths $opts[remote]
+  }
+  &gc={|_ opts|
+    rclone:purge-garbage-collected $opts[remote]
+  }
+]
+var opts positional = (rbackup-flag:parse $@args)
+
+var has-subcommand = (has-key $subcommands $positional[0])
+if (and (put $opts[help]) (not $has-subcommand)) {
+  echo 'Simple rclone wrapper for managing backups.'
+  echo "\nUsage: rbackup [--remote REMOTE:FOLDER/PATH] [--help] subcommand"
+  echo "\nSubcommands: generate gc"
+  exit 0
+}
+
+if (or (== (count $positional) 0) (not (has-key $subcommands $positional[0]))) {
+  fail "a valid subcommand is necessary."
+}
+var subcommand positional-paths = $positional[0] $positional[1..]
+
+if (eq $opts[remote] "") {
+  fail "you need to specify the rclone remote."
+}
+
+$subcommands[$subcommand] $positional-paths $opts
