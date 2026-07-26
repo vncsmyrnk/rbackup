@@ -15,3 +15,9 @@ sudo make install
 ```sh
 nix develop --command rbackup --help
 ```
+
+## Tests
+
+```sh
+nix develop --command make check
+```
