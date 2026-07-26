@@ -34,4 +34,5 @@ if (eq $opts[remote] "") {
   fail "you need to specify the rclone remote."
 }
 
-$subcommands[$subcommand] $positional-paths $opts
+var action~ = $subcommands[$subcommand]
+$action~ $positional-paths $opts
