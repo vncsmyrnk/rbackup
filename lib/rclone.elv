@@ -1,9 +1,7 @@
 use os
 use re
 
-var file-count-to-keep = 1
-
-fn backup {|paths remote|
+fn backup {|remote paths|
   var date-suffix = (date +'%Y%m%d%H%M%S')
   var backup-target-path = '/tmp/backup-'$date-suffix'.zip'
   var encrypted-backup-target-path = '/tmp/backup-'$date-suffix'.zip.enc'
@@ -36,7 +34,7 @@ fn backup {|paths remote|
     $remote
 }
 
-fn fetch-files-to-garbage-collect {|remote|
+fn fetch-files-to-garbage-collect {|remote keep-count|
   var files = [(
     rclone lsf --files-only ^
       --max-depth 1 --format "tp" $remote ^
@@ -44,15 +42,15 @@ fn fetch-files-to-garbage-collect {|remote|
         | keep-if {|s| re:match "backup-[0-9]{14}.zip.enc" $s } ^
         | order &reverse=$true
   )]
-  if (> (count $files) $file-count-to-keep) {
-    put $files[$file-count-to-keep..]
+  if (> (count $files) $keep-count) {
+    put $files[$keep-count..]
     return
   }
   put []
 }
 
-fn purge-garbage-collected {|remote|
-  var files-to-garbage-collect = (fetch-files-to-garbage-collect $remote)
+fn purge-garbage-collected {|remote keep-count|
+  var files-to-garbage-collect = (fetch-files-to-garbage-collect $remote $keep-count)
   if (== (count $files-to-garbage-collect) 0) {
     fail "no files to purge."
   }

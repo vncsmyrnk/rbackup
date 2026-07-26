@@ -22,12 +22,42 @@ fi
 ' > $tmpdir/rclone
     chmod +x $tmpdir/rclone
 
-    rclone:purge-garbage-collected dummy-remote >/dev/null
+    rclone:purge-garbage-collected dummy-remote 1 >/dev/null
 
     var calls = [(cat $rclone-calls)]
     tap:assert-expected $calls [
       'lsf --files-only --max-depth 1 --format tp dummy-remote'
       'deletefile dummy-remote/backup-20230101100000.zip.enc'
+    ]
+
+    set E:PATH = $old-path
+    os:remove-all $tmpdir
+  }]
+
+  [&d='purge-garbage-collected with keep count as two' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path = $E:PATH
+    set E:PATH = $tmpdir':'$old-path
+
+    var rclone-calls = $tmpdir/rclone-calls
+    echo '#!/bin/sh
+echo "$@" >> '$rclone-calls'
+if [ "$1" = "lsf" ]; then
+  echo "2023-01-01 10:00:00;backup-20230101100000.zip.enc"
+  echo "2023-01-02 11:00:00;backup-20230102100000.zip.enc"
+  echo "2023-01-03 12:00:00;backup-20230103100000.zip.enc"
+  echo "2023-01-04 13:00:00;backup-20230104100000.zip.enc"
+fi
+' > $tmpdir/rclone
+    chmod +x $tmpdir/rclone
+
+    rclone:purge-garbage-collected dummy-remote 2 >/dev/null
+
+    var calls = [(cat $rclone-calls)]
+    tap:assert-expected $calls [
+      'lsf --files-only --max-depth 1 --format tp dummy-remote'
+      'deletefile dummy-remote/backup-20230101100000.zip.enc'
+      'deletefile dummy-remote/backup-20230102100000.zip.enc'
     ]
 
     set E:PATH = $old-path
@@ -67,7 +97,7 @@ echo "20230101120000"' > $tmpdir/date
 
     set-env RBACKUP_ENCRYPT_PASSWORD "dummy"
 
-    rclone:backup [$testfile $testdir] dummy-remote >/dev/null
+    rclone:backup dummy-remote [$testfile $testdir] >/dev/null
 
     var rclone-calls = [(cat $tmpdir/rclone-calls)]
     tap:assert-expected $rclone-calls ['copy -v /tmp/backup-20230101120000.zip.enc dummy-remote']
@@ -90,14 +120,14 @@ echo "20230101120000"' > $tmpdir/date
   }]
 
   [&d='backup without password fails' &f={
-    var err = ?(rclone:backup [foo] dummy-remote)
+    var err = ?(rclone:backup dummy-remote [foo])
     var is-err = (not-eq $err $ok)
     tap:assert $is-err
   }]
 
   [&d='backup without paths fails' &f={
     set-env RBACKUP_ENCRYPT_PASSWORD "dummy"
-    var err = ?(rclone:backup [] dummy-remote)
+    var err = ?(rclone:backup dummy-remote [])
     var is-err = (not-eq $err $ok)
     tap:assert $is-err
     unset-env RBACKUP_ENCRYPT_PASSWORD

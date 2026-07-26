@@ -8,10 +8,16 @@ fn parse {|@argv|
     set rclone-remote = (get-env RBACKUP_RCLONE_REMOTE)
   }
 
-  var opts = [&remote=$rclone-remote &help=$false]
+  var keep-count = 1
+  if (has-env RBACKUP_KEEP_COUNT) {
+    set keep-count = (get-env RBACKUP_KEEP_COUNT)
+  }
+
+  var opts = [&remote=$rclone-remote &help=$false &keep-count=$keep-count]
 
   var opts-spec = [
     [&short=r &long=remote &arg-required]
+    [&short=k &long=keep &arg-required]
     [&short=h &long=help]
   ]
   var parsed-opts positional = (flag:parse-getopt $argv $opts-spec)
