@@ -5,22 +5,28 @@ use rbackup/flag rbackup-flag
 use rbackup/rclone
 
 var subcommands = [
-  &generate={|paths opts|
-    if (== (count $paths) 0) {
-      fail "you need to specify a path."
+  &generate=[
+    &f={|paths opts|
+      if (== (count $paths) 0) {
+        fail "you need to specify a path."
+      }
+      rclone:backup $opts[remote] $paths
     }
-    rclone:backup $opts[remote] $paths
-  }
-  &gc={|_ opts|
-    rclone:purge-garbage-collected $opts[remote] $opts[keep-count]
-  }
+    &usage="rbackup generate [--remote REMOTE:FOLDER/PATH]"
+  ]
+  &gc=[
+    &f={|_ opts|
+      rclone:purge-garbage-collected $opts[remote] $opts[keep-count]
+    }
+    &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [--keep NUM]"
+  ]
 ]
 var opts positional = (rbackup-flag:parse $@args)
 
 var has-subcommand = (has-key $subcommands $positional[0])
 if (and (put $opts[help]) (not $has-subcommand)) {
   echo 'Simple rclone wrapper for managing backups.'
-  echo "\nUsage: rbackup [--remote REMOTE:FOLDER/PATH] [--keep NUM] [--help] subcommand"
+  echo "\nUsage: rbackup [FLAGS] subcommand"
   echo "\nSubcommands: generate gc"
   exit 0
 }
@@ -30,9 +36,15 @@ if (or (== (count $positional) 0) (not (has-key $subcommands $positional[0]))) {
 }
 var subcommand positional-paths = $positional[0] $positional[1..]
 
+var action = $subcommands[$subcommand]
+if (put $opts[help]) {
+  echo 'Usage: '$action[usage]
+  exit 0
+}
+
 if (eq $opts[remote] "") {
   fail "you need to specify the rclone remote."
 }
 
-var action~ = $subcommands[$subcommand]
-$action~ $positional-paths $opts
+var f~ = $action[f]
+$f~ $positional-paths $opts
