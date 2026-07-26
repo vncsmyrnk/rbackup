@@ -1,5 +1,7 @@
 use os
 use re
+use path
+use str
 
 fn backup {|remote paths|
   var date-suffix = (date +'%Y%m%d%H%M%S')
@@ -35,14 +37,39 @@ fn backup {|remote paths|
     $remote
 }
 
-fn fetch-files-to-garbage-collect {|remote keep-count|
-  var files = [(
+fn fetch-files {|remote|
+  put (
     rclone lsf --files-only ^
       --max-depth 1 --format "tp" $remote ^
         | re:awk &sep=';' {|_ _ 1| put $1 } ^
         | keep-if {|s| re:match "backup-[0-9]{14}.zip.enc" $s } ^
         | order &reverse=$true
-  )]
+  )
+}
+
+fn fetch-and-unwrap {|remote index|
+  var files = [(fetch-files $remote)]
+  if (< (count $files) $index) {
+    fail "index not found."
+  }
+  var file-name = $files[(- $index 1)]
+  var target-dir = (os:temp-dir)
+  var backup-file-path = $target-dir$path:separator$file-name
+
+  rclone copy $remote'/'$file-name $target-dir
+
+  var decrypted-file-path = $target-dir$path:separator'decrypted.zip'
+  openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -salt ^
+    -in $backup-file-path ^
+    -out $decrypted-file-path ^
+    -pass env:RBACKUP_ENCRYPT_PASSWORD
+
+  var target-unwrapped-dir = $target-dir$path:separator'target'
+  unzip $decrypted-file-path -d $target-unwrapped-dir
+}
+
+fn fetch-files-to-garbage-collect {|remote keep-count|
+  var files = [(fetch-files $remote)]
   if (> (count $files) $keep-count) {
     put $files[$keep-count..]
     return

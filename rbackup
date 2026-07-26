@@ -20,6 +20,15 @@ var subcommands = [
     }
     &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [--keep NUM]"
   ]
+  &fetch=[
+    &f={|positionals opts|
+      if (== (count $positionals) 0) {
+        fail "you need to specify a valid index."
+      }
+      rclone:fetch-and-unwrap $opts[remote] $positionals[0]
+    }
+    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] <INDEX>"
+  ]
 ]
 var opts positional = (rbackup-flag:parse $@args)
 

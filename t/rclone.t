@@ -5,6 +5,7 @@ use github.com/tesujimath/elvish-tap/tap
 use ../lib/rclone
 use os
 use str
+use re
 
 tap:run [
   [&d='purge-garbage-collected' &f={
@@ -130,5 +131,76 @@ echo "20230101120000"' > $tmpdir/date
     var is-err = (not-eq $err $ok)
     tap:assert $is-err
     unset-env RBACKUP_ENCRYPT_PASSWORD
+  }]
+
+  [&d='fetch-and-unwrap success' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path = $E:PATH
+    set E:PATH = $tmpdir':'$old-path
+
+    echo '#!/bin/sh
+echo "$@" >> '$tmpdir'/rclone-calls
+if [ "$1" = "lsf" ]; then
+  echo "2023-01-01 10:00:00;backup-20230101100000.zip.enc"
+  echo "2023-01-02 10:00:00;backup-20230102100000.zip.enc"
+fi
+' > $tmpdir/rclone
+    chmod +x $tmpdir/rclone
+
+    echo '#!/bin/sh
+echo "$@" >> '$tmpdir'/openssl-calls
+' > $tmpdir/openssl
+    chmod +x $tmpdir/openssl
+
+    echo '#!/bin/sh
+echo "$@" >> '$tmpdir'/unzip-calls
+' > $tmpdir/unzip
+    chmod +x $tmpdir/unzip
+
+    set-env RBACKUP_ENCRYPT_PASSWORD "dummy"
+
+    rclone:fetch-and-unwrap dummy-remote 1 >/dev/null
+
+    var rclone-calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert-expected (count $rclone-calls) (num 2)
+    tap:assert-expected $rclone-calls[0] 'lsf --files-only --max-depth 1 --format tp dummy-remote'
+
+    var rclone-copy = $rclone-calls[1]
+    tap:assert (re:match 'copy dummy-remote/backup-20230102100000.zip.enc [0-9a-zA-Z/.]+' $rclone-copy)
+    var extracted-tmpdir = (str:trim-prefix $rclone-copy 'copy dummy-remote/backup-20230102100000.zip.enc ')
+
+    var openssl-calls = [(cat $tmpdir/openssl-calls)]
+    tap:assert-expected $openssl-calls [
+      'enc -d -aes-256-cbc -pbkdf2 -iter 100000 -salt -in '$extracted-tmpdir'/backup-20230102100000.zip.enc -out '$extracted-tmpdir'/decrypted.zip -pass env:RBACKUP_ENCRYPT_PASSWORD'
+    ]
+
+    var unzip-calls = [(cat $tmpdir/unzip-calls)]
+    tap:assert-expected $unzip-calls [
+      $extracted-tmpdir'/decrypted.zip -d '$extracted-tmpdir'/target'
+    ]
+
+    unset-env RBACKUP_ENCRYPT_PASSWORD
+    set E:PATH = $old-path
+    os:remove-all $tmpdir
+  }]
+
+  [&d='fetch-and-unwrap index out of bounds fails' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path = $E:PATH
+    set E:PATH = $tmpdir':'$old-path
+
+    echo '#!/bin/sh
+if [ "$1" = "lsf" ]; then
+  echo "2023-01-01 10:00:00;backup-20230101100000.zip.enc"
+fi
+' > $tmpdir/rclone
+    chmod +x $tmpdir/rclone
+
+    var err = ?(rclone:fetch-and-unwrap dummy-remote 2 >/dev/null)
+    var is-err = (not-eq $err $ok)
+    tap:assert $is-err
+
+    set E:PATH = $old-path
+    os:remove-all $tmpdir
   }]
 ]

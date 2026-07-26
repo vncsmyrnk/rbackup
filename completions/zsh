@@ -37,6 +37,7 @@ function _rbackup() {
     choices=(
       'generate'
       'gc'
+      'fetch'
     )
     _describe 'commands' choices && ret=0
     ;;
@@ -47,6 +48,9 @@ function _rbackup() {
       ;;
     gc)
       _rbackup_gc "$@" && ret=0
+      ;;
+    fetch)
+      _rbackup_fetch "$@" && ret=0
       ;;
     esac
     ;;
