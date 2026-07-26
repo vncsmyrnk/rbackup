@@ -9,3 +9,9 @@ A simple backup script written on top of [`rclone`](https://rclone.org/).
 ```sh
 sudo make install
 ```
+
+## Running from source
+
+```sh
+nix develop --command rbackup --help
+```
