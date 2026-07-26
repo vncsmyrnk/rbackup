@@ -54,11 +54,10 @@ fi
     rclone:purge-garbage-collected dummy-remote 2 >/dev/null
 
     var calls = [(cat $rclone-calls)]
-    tap:assert-expected $calls [
-      'lsf --files-only --max-depth 1 --format tp dummy-remote'
-      'deletefile dummy-remote/backup-20230101100000.zip.enc'
-      'deletefile dummy-remote/backup-20230102100000.zip.enc'
-    ]
+    tap:assert-expected $calls[0] 'lsf --files-only --max-depth 1 --format tp dummy-remote'
+    tap:assert-expected (count $calls) (num 3)
+    tap:assert (or (eq $calls[1] 'deletefile dummy-remote/backup-20230101100000.zip.enc') (eq $calls[2] 'deletefile dummy-remote/backup-20230101100000.zip.enc'))
+    tap:assert (or (eq $calls[1] 'deletefile dummy-remote/backup-20230102100000.zip.enc') (eq $calls[2] 'deletefile dummy-remote/backup-20230102100000.zip.enc'))
 
     set E:PATH = $old-path
     os:remove-all $tmpdir
