@@ -75,7 +75,7 @@ echo "$@" >> '$tmpdir'/rclone-calls
 
     echo '#!/bin/sh
 echo "$@" >> '$tmpdir'/zip-calls
-echo "zip $@"' > $tmpdir/zip
+touch /tmp/backup-20230101120000.zip' > $tmpdir/zip
     chmod +x $tmpdir/zip
 
     echo '#!/bin/sh

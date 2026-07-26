@@ -20,6 +20,7 @@ fn backup {|remote paths|
     } else {
       zip -q $backup-target-path $p
     }
+    echo (du -shL $p)
   } else {
     fail "no path set."
   }
