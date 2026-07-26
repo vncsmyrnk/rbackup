@@ -24,6 +24,7 @@ install: all
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/rbackup
 	rm -f $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_rbackup
+	rm -rf $(DESTDIR)$(PREFIX)/share/elvish/lib/rbackup
 
 nix:
 	nix build .# -L
