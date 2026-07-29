@@ -3,12 +3,16 @@
 
 use rbackup/flag rbackup-flag
 use rbackup/rclone
+use rbackup/io
 
 var subcommands = [
   &generate=[
     &f={|paths opts|
       if (== (count $paths) 0) {
         fail "you need to specify a path."
+      }
+      if (not (eq (io:read-secret "encryption password: ") $E:RBACKUP_ENCRYPT_PASSWORD)) {
+        fail "input does not match encryption password set at RBACKUP_ENCRYPT_PASSWORD."
       }
       rclone:backup $opts[remote] $paths
     }
