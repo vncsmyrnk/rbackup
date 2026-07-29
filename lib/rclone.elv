@@ -3,33 +3,16 @@ use re
 use path
 use str
 
-fn backup {|remote paths|
+fn upload {|remote file-path|
   var date-suffix = (date +'%Y%m%d%H%M%S')
-  var backup-target-path = '/tmp/backup-'$date-suffix'.zip'
   var encrypted-backup-target-path = '/tmp/backup-'$date-suffix'.zip.enc'
 
   if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
     fail "encrypt password not set."
   }
 
-  for p $paths {
-    if (not (os:exists &follow-symlink=$true $p)) {
-      echo 'ignoring '$p' as it does not exist.' >&2
-      continue
-    }
-    if (os:is-dir &follow-symlink=$true $p) {
-      zip -qr $backup-target-path $p
-    } else {
-      zip -q $backup-target-path $p
-    }
-    echo (du -shL $p)
-  } else {
-    fail "no path set."
-  }
-  zip -T $backup-target-path
-
   openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt ^
-    -in $backup-target-path ^
+    -in $file-path ^
     -out $encrypted-backup-target-path ^
     -pass env:RBACKUP_ENCRYPT_PASSWORD
 

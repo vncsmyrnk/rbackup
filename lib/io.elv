@@ -4,11 +4,11 @@ fn read-secret {|prompt|
 
   try {
     stty -echo
-    print $prompt >/dev/tty
+    print $prompt >&2
     set secret = (read-line)
   } finally {
     stty $old-stty
-    echo >/dev/tty
+    echo >&2
   }
 
   put $secret

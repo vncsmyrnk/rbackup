@@ -46,6 +46,7 @@ echo "$@" >> '$rclone-calls'
 if [ "$1" = "lsf" ]; then
   echo "2023-01-01 10:00:00;backup-20230101100000.zip.enc"
   echo "2023-01-02 11:00:00;backup-20230102100000.zip.enc"
+
   echo "2023-01-03 12:00:00;backup-20230103100000.zip.enc"
   echo "2023-01-04 13:00:00;backup-20230104100000.zip.enc"
 fi
@@ -75,11 +76,6 @@ echo "$@" >> '$tmpdir'/rclone-calls
     chmod +x $tmpdir/rclone
 
     echo '#!/bin/sh
-echo "$@" >> '$tmpdir'/zip-calls
-touch /tmp/backup-20230101120000.zip' > $tmpdir/zip
-    chmod +x $tmpdir/zip
-
-    echo '#!/bin/sh
 echo "$@" >> '$tmpdir'/openssl-calls
 echo "openssl $@"' > $tmpdir/openssl
     chmod +x $tmpdir/openssl
@@ -89,27 +85,19 @@ echo "$@" >> '$tmpdir'/date-calls
 echo "20230101120000"' > $tmpdir/date
     chmod +x $tmpdir/date
 
-    var testfile = $tmpdir/testfile
-    echo "test" > $testfile
-
-    var testdir = $tmpdir/testdir
-    mkdir -p $testdir
+    var testfile = $tmpdir/testfile.zip
+    echo "dummy zip content" > $testfile
 
     set-env RBACKUP_ENCRYPT_PASSWORD "dummy"
 
-    rclone:backup dummy-remote [$testfile $testdir] >/dev/null
+    rclone:upload dummy-remote $testfile >/dev/null
 
     var rclone-calls = [(cat $tmpdir/rclone-calls)]
     tap:assert-expected $rclone-calls ['copy -v /tmp/backup-20230101120000.zip.enc dummy-remote']
 
-    var zip-calls = [(cat $tmpdir/zip-calls)]
-    tap:assert-expected $zip-calls ['-q /tmp/backup-20230101120000.zip '$testfile
-      '-qr /tmp/backup-20230101120000.zip '$testdir
-      '-T /tmp/backup-20230101120000.zip']
-
     var openssl-calls = [(cat $tmpdir/openssl-calls)]
     tap:assert-expected $openssl-calls [
-      'enc -aes-256-cbc -pbkdf2 -iter 100000 -salt -in /tmp/backup-20230101120000.zip -out /tmp/backup-20230101120000.zip.enc -pass env:RBACKUP_ENCRYPT_PASSWORD']
+      'enc -aes-256-cbc -pbkdf2 -iter 100000 -salt -in '$testfile' -out /tmp/backup-20230101120000.zip.enc -pass env:RBACKUP_ENCRYPT_PASSWORD']
 
     var date-calls = [(cat $tmpdir/date-calls)]
     tap:assert-expected $date-calls ['+%Y%m%d%H%M%S']
@@ -120,17 +108,9 @@ echo "20230101120000"' > $tmpdir/date
   }]
 
   [&d='backup without password fails' &f={
-    var err = ?(rclone:backup dummy-remote [foo])
+    var err = ?(rclone:upload dummy-remote foo)
     var is-err = (not-eq $err $ok)
     tap:assert $is-err
-  }]
-
-  [&d='backup without paths fails' &f={
-    set-env RBACKUP_ENCRYPT_PASSWORD "dummy"
-    var err = ?(rclone:backup dummy-remote [])
-    var is-err = (not-eq $err $ok)
-    tap:assert $is-err
-    unset-env RBACKUP_ENCRYPT_PASSWORD
   }]
 
   [&d='fetch-and-unwrap success' &f={

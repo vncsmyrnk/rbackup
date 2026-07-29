@@ -4,6 +4,7 @@
 use rbackup/flag rbackup-flag
 use rbackup/rclone
 use rbackup/io
+use rbackup/zip
 
 var subcommands = [
   &generate=[
@@ -14,7 +15,10 @@ var subcommands = [
       if (not (eq (io:read-secret "encryption password: ") $E:RBACKUP_ENCRYPT_PASSWORD)) {
         fail "input does not match encryption password set at RBACKUP_ENCRYPT_PASSWORD."
       }
-      rclone:backup $opts[remote] $paths
+      var date-suffix = (date +'%Y%m%d%H%M%S')
+      var backup-target-path = '/tmp/backup-'$date-suffix'.zip'
+      zip:compact $backup-target-path $paths
+      rclone:upload $opts[remote] $backup-target-path
     }
     &usage="rbackup generate [--remote REMOTE:FOLDER/PATH]"
   ]
