@@ -65,7 +65,7 @@ fi
     os:remove-all $tmpdir
   }]
 
-  [&d='backup' &f={
+  [&d='upload' &f={
     var tmpdir = (os:temp-dir)
     var old-path = $E:PATH
     set E:PATH = $tmpdir':'$old-path
@@ -75,45 +75,19 @@ echo "$@" >> '$tmpdir'/rclone-calls
 ' > $tmpdir/rclone
     chmod +x $tmpdir/rclone
 
-    echo '#!/bin/sh
-echo "$@" >> '$tmpdir'/openssl-calls
-echo "openssl $@"' > $tmpdir/openssl
-    chmod +x $tmpdir/openssl
-
-    echo '#!/bin/sh
-echo "$@" >> '$tmpdir'/date-calls
-echo "20230101120000"' > $tmpdir/date
-    chmod +x $tmpdir/date
-
-    var testfile = $tmpdir/testfile.zip
-    echo "dummy zip content" > $testfile
-
-    set-env RBACKUP_ENCRYPT_PASSWORD "dummy"
+    var testfile = $tmpdir/testfile.zip.enc
+    echo "dummy zip enc content" > $testfile
 
     rclone:upload dummy-remote $testfile >/dev/null
 
     var rclone-calls = [(cat $tmpdir/rclone-calls)]
-    tap:assert-expected $rclone-calls ['copy -v /tmp/backup-20230101120000.zip.enc dummy-remote']
+    tap:assert-expected $rclone-calls ['copy -v '$testfile' dummy-remote']
 
-    var openssl-calls = [(cat $tmpdir/openssl-calls)]
-    tap:assert-expected $openssl-calls [
-      'enc -aes-256-cbc -pbkdf2 -iter 100000 -salt -in '$testfile' -out /tmp/backup-20230101120000.zip.enc -pass env:RBACKUP_ENCRYPT_PASSWORD']
-
-    var date-calls = [(cat $tmpdir/date-calls)]
-    tap:assert-expected $date-calls ['+%Y%m%d%H%M%S']
-
-    unset-env RBACKUP_ENCRYPT_PASSWORD
     set E:PATH = $old-path
     os:remove-all $tmpdir
   }]
 
-  [&d='backup without password fails' &f={
-    var err = ?(rclone:upload dummy-remote foo)
-    var is-err = (not-eq $err $ok)
-    tap:assert $is-err
-  }]
-
-  [&d='fetch-and-unwrap success' &f={
+  [&d='fetch success' &f={
     var tmpdir = (os:temp-dir)
     var old-path = $E:PATH
     set E:PATH = $tmpdir':'$old-path
@@ -127,44 +101,22 @@ fi
 ' > $tmpdir/rclone
     chmod +x $tmpdir/rclone
 
-    echo '#!/bin/sh
-echo "$@" >> '$tmpdir'/openssl-calls
-' > $tmpdir/openssl
-    chmod +x $tmpdir/openssl
+    var target-dir = $tmpdir/target
+    mkdir -p $target-dir
 
-    echo '#!/bin/sh
-echo "$@" >> '$tmpdir'/unzip-calls
-' > $tmpdir/unzip
-    chmod +x $tmpdir/unzip
-
-    set-env RBACKUP_ENCRYPT_PASSWORD "dummy"
-
-    rclone:fetch-and-unwrap dummy-remote 1 >/dev/null
+    var fetched = (rclone:fetch dummy-remote 1 $target-dir)
 
     var rclone-calls = [(cat $tmpdir/rclone-calls)]
     tap:assert-expected (count $rclone-calls) (num 2)
     tap:assert-expected $rclone-calls[0] 'lsf --files-only --max-depth 1 --format tp dummy-remote'
+    tap:assert-expected $rclone-calls[1] 'copy dummy-remote/backup-20230102100000.zip.enc '$target-dir
+    tap:assert-expected $fetched $target-dir'/backup-20230102100000.zip.enc'
 
-    var rclone-copy = $rclone-calls[1]
-    tap:assert (re:match 'copy dummy-remote/backup-20230102100000.zip.enc [0-9a-zA-Z/.]+' $rclone-copy)
-    var extracted-tmpdir = (str:trim-prefix $rclone-copy 'copy dummy-remote/backup-20230102100000.zip.enc ')
-
-    var openssl-calls = [(cat $tmpdir/openssl-calls)]
-    tap:assert-expected $openssl-calls [
-      'enc -d -aes-256-cbc -pbkdf2 -iter 100000 -salt -in '$extracted-tmpdir'/backup-20230102100000.zip.enc -out '$extracted-tmpdir'/decrypted.zip -pass env:RBACKUP_ENCRYPT_PASSWORD'
-    ]
-
-    var unzip-calls = [(cat $tmpdir/unzip-calls)]
-    tap:assert-expected $unzip-calls [
-      $extracted-tmpdir'/decrypted.zip -d '$extracted-tmpdir'/target'
-    ]
-
-    unset-env RBACKUP_ENCRYPT_PASSWORD
     set E:PATH = $old-path
     os:remove-all $tmpdir
   }]
 
-  [&d='fetch-and-unwrap index out of bounds fails' &f={
+  [&d='fetch index out of bounds fails' &f={
     var tmpdir = (os:temp-dir)
     var old-path = $E:PATH
     set E:PATH = $tmpdir':'$old-path
@@ -176,7 +128,7 @@ fi
 ' > $tmpdir/rclone
     chmod +x $tmpdir/rclone
 
-    var err = ?(rclone:fetch-and-unwrap dummy-remote 2 >/dev/null)
+    var err = ?(rclone:fetch dummy-remote 2 $tmpdir >/dev/null)
     var is-err = (not-eq $err $ok)
     tap:assert $is-err
 

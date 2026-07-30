@@ -5,6 +5,9 @@ use rbackup/flag rbackup-flag
 use rbackup/rclone
 use rbackup/io
 use rbackup/zip
+use rbackup/openssl
+use os
+use path
 
 var subcommands = [
   &generate=[
@@ -12,13 +15,18 @@ var subcommands = [
       if (== (count $paths) 0) {
         fail "you need to specify a path."
       }
+      if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
+        fail "encrypt password not set."
+      }
       if (not (eq (io:read-secret "encryption password: ") $E:RBACKUP_ENCRYPT_PASSWORD)) {
         fail "input does not match encryption password set at RBACKUP_ENCRYPT_PASSWORD."
       }
       var date-suffix = (date +'%Y%m%d%H%M%S')
       var backup-target-path = '/tmp/backup-'$date-suffix'.zip'
+      var encrypted-backup-target-path = '/tmp/backup-'$date-suffix'.zip.enc'
       zip:compact $backup-target-path $paths
-      rclone:upload $opts[remote] $backup-target-path
+      openssl:encrypt $backup-target-path $encrypted-backup-target-path $E:RBACKUP_ENCRYPT_PASSWORD
+      rclone:upload $opts[remote] $encrypted-backup-target-path
     }
     &usage="rbackup generate [--remote REMOTE:FOLDER/PATH]"
   ]
@@ -33,7 +41,15 @@ var subcommands = [
       if (== (count $positionals) 0) {
         fail "you need to specify a valid index."
       }
-      rclone:fetch-and-unwrap $opts[remote] $positionals[0]
+      if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
+        fail "encrypt password not set."
+      }
+      var target-dir = (os:temp-dir)
+      var backup-file-path = (rclone:fetch $opts[remote] $positionals[0] $target-dir)
+      var decrypted-file-path = $target-dir$path:separator'decrypted.zip'
+      openssl:decrypt $backup-file-path $decrypted-file-path $E:RBACKUP_ENCRYPT_PASSWORD
+      var target-unwrapped-dir = $target-dir$path:separator'target'
+      zip:extract $decrypted-file-path $target-unwrapped-dir
     }
     &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] <INDEX>"
   ]

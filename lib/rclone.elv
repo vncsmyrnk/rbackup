@@ -4,20 +4,7 @@ use path
 use str
 
 fn upload {|remote file-path|
-  var date-suffix = (date +'%Y%m%d%H%M%S')
-  var encrypted-backup-target-path = '/tmp/backup-'$date-suffix'.zip.enc'
-
-  if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
-    fail "encrypt password not set."
-  }
-
-  openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt ^
-    -in $file-path ^
-    -out $encrypted-backup-target-path ^
-    -pass env:RBACKUP_ENCRYPT_PASSWORD
-
-  rclone copy -v $encrypted-backup-target-path ^
-    $remote
+  rclone copy -v $file-path $remote
 }
 
 fn fetch-files {|remote|
@@ -30,25 +17,16 @@ fn fetch-files {|remote|
   )
 }
 
-fn fetch-and-unwrap {|remote index|
+fn fetch {|remote index target-dir|
   var files = [(fetch-files $remote)]
   if (< (count $files) $index) {
     fail "index not found."
   }
   var file-name = $files[(- $index 1)]
-  var target-dir = (os:temp-dir)
   var backup-file-path = $target-dir$path:separator$file-name
 
   rclone copy $remote'/'$file-name $target-dir
-
-  var decrypted-file-path = $target-dir$path:separator'decrypted.zip'
-  openssl enc -d -aes-256-cbc -pbkdf2 -iter 100000 -salt ^
-    -in $backup-file-path ^
-    -out $decrypted-file-path ^
-    -pass env:RBACKUP_ENCRYPT_PASSWORD
-
-  var target-unwrapped-dir = $target-dir$path:separator'target'
-  unzip $decrypted-file-path -d $target-unwrapped-dir
+  put $backup-file-path
 }
 
 fn fetch-files-to-garbage-collect {|remote keep-count|
@@ -71,3 +49,4 @@ fn purge-garbage-collected {|remote keep-count|
     echo 'deleted '$file
   } $files-to-garbage-collect
 }
+
