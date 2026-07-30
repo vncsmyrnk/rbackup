@@ -43,12 +43,28 @@
           ];
         };
 
-        nativeBuildInputs = with pkgs; [ elvish ];
+        nativeBuildInputs = with pkgs; [ makeWrapper ];
 
         buildInputs = with pkgs; [ elvish ];
 
         installPhase = ''
           make install PREFIX=$out
+        '';
+
+        postFixup = ''
+          patchShebangs .
+          wrapProgram $out/bin/rbackup \
+          --set PATH ${
+            pkgs.lib.makeBinPath [
+              pkgs.elvish
+              pkgs.coreutils
+              pkgs.zip
+              pkgs.unzip
+              pkgs.openssl
+              pkgs.rclone
+            ]
+          } \
+          --prefix XDG_DATA_DIRS "$out/share"
         '';
 
         doCheck = true;
