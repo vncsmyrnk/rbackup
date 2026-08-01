@@ -21,3 +21,9 @@ nix develop --command rbackup --help
 ```sh
 nix develop --command make check
 ```
+
+---
+
+## Alternatives
+
+- [restic: multiple backends, first-class support for backup restoring](https://restic.net/)
