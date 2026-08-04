@@ -60,7 +60,7 @@ var has-subcommand = (has-key $subcommands $positional[0])
 if (and (put $opts[help]) (not $has-subcommand)) {
   echo 'Simple rclone wrapper for managing backups.'
   echo "\nUsage: rbackup [FLAGS] subcommand"
-  echo "\nSubcommands: generate gc"
+  echo "\nSubcommands: generate gc fetch"
   exit 0
 }
 
