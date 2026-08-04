@@ -38,6 +38,7 @@
             ./Makefile
             ./completions
             ./lib
+            ./man
             ./t
             ./rbackup
           ];
@@ -88,6 +89,7 @@
           elvish
           perl
           yq
+          pandoc
           elvish-tap
           default
         ];

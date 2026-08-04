@@ -23,3 +23,8 @@ jobs:
 
       - name: Build flake
         run: nix build .# -L
+
+      - name: Check docs
+        run: |
+          nix develop --command make doc
+          git diff --exit-code
