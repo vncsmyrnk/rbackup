@@ -13,6 +13,11 @@ fn parse {|@argv|
     set keep-count = (get-env RBACKUP_KEEP_COUNT)
   }
 
+  var paths = []
+  if (has-env RBACKUP_PATHS) {
+    set paths = [(str:split $path:list-separator $E:RBACKUP_PATHS)]
+  }
+
   var opts = [&remote=$rclone-remote &help=$false &keep-count=$keep-count]
 
   var opts-spec = [
@@ -30,11 +35,16 @@ fn parse {|@argv|
     set opts[$o[spec][long]] = $value
   }
 
-  if (> (count $positional) 0) {
-    put $opts $positional
+  if (> (count $positional) 1) {
+    put $opts $positional[0] $positional[1..]
     return
   }
 
-  var paths = [(str:split $path:list-separator $E:RBACKUP_PATHS)]
-  put $opts $paths
+  var first-positional
+  if (== (count $positional) 0) {
+    put $opts '' $paths
+    return
+  }
+
+  put $opts $positional[0] $paths
 }

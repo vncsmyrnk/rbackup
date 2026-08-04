@@ -54,9 +54,9 @@ var subcommands = [
     &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] <INDEX>"
   ]
 ]
-var opts positional = (rbackup-flag:parse $@args)
+var opts subcommand paths = (rbackup-flag:parse $@args)
 
-var has-subcommand = (has-key $subcommands $positional[0])
+var has-subcommand = (has-key $subcommands $subcommand)
 if (and (put $opts[help]) (not $has-subcommand)) {
   echo 'Simple rclone wrapper for managing backups.'
   echo "\nUsage: rbackup [FLAGS] subcommand"
@@ -64,10 +64,9 @@ if (and (put $opts[help]) (not $has-subcommand)) {
   exit 0
 }
 
-if (or (== (count $positional) 0) (not (has-key $subcommands $positional[0]))) {
+if (eq $subcommand "") {
   fail "a valid subcommand is necessary."
 }
-var subcommand positional-paths = $positional[0] $positional[1..]
 
 var action = $subcommands[$subcommand]
 if (put $opts[help]) {
@@ -80,4 +79,4 @@ if (eq $opts[remote] "") {
 }
 
 var f~ = $action[f]
-$f~ $positional-paths $opts
+$f~ $paths $opts
