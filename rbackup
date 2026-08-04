@@ -12,7 +12,15 @@ use path
 var subcommands = [
   &generate=[
     &f={|paths opts|
-      if (== (count $paths) 0) {
+      var expanded-paths = []
+      for p $paths {
+        if (eq $p "-") {
+          set expanded-paths = [$@expanded-paths (io:read-stdin)]
+        } else {
+          set expanded-paths = [$@expanded-paths $p]
+        }
+      }
+      if (== (count $expanded-paths) 0) {
         fail "you need to specify a path."
       }
       if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
@@ -24,7 +32,7 @@ var subcommands = [
       var date-suffix = (date +'%Y%m%d%H%M%S')
       var backup-target-path = '/tmp/backup-'$date-suffix'.zip'
       var encrypted-backup-target-path = '/tmp/backup-'$date-suffix'.zip.enc'
-      zip:compact $backup-target-path $paths
+      zip:compact $backup-target-path $expanded-paths
       openssl:encrypt $backup-target-path $encrypted-backup-target-path $E:RBACKUP_ENCRYPT_PASSWORD
       rclone:upload $opts[remote] $encrypted-backup-target-path
     }

@@ -6,20 +6,21 @@ rbackup \- simple encrypted backup manager written in Elvish and built
 on top of rclone
 .SH SYNOPSIS
 \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]generate\f[R]
-[\f[I]PATH\f[R]\&...]
-\f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]gc\f[R] \f[B]rbackup\f[R]
-[\f[I]OPTIONS\f[R]] \f[B]fetch\f[R] \f[I]INDEX\f[R] \f[B]rbackup\f[R]
-\f[B]\-h\f[R] | \f[B]\(enhelp\f[R]
+[\f[I]PATH\f[R]\&...
+| \f[B]\-\f[R]] \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]gc\f[R]
+\f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]fetch\f[R] \f[I]INDEX\f[R]
+\f[B]rbackup\f[R] \f[B]\-h\f[R] | \f[B]\(enhelp\f[R]
 .SH DESCRIPTION
 \f[B]rbackup\f[R] is an Elvish script that compresses, encrypts,
 uploads, and restores backup archives using \f[CR]rclone\f[R],
 \f[CR]openssl\f[R], and \f[CR]zip\f[R].
 .SH SUBCOMMANDS
 .TP
-\f[B]generate\f[R] [\f[I]PATH\f[R]\&...]
-Compacts specified paths into a ZIP file, encrypts it using
-\f[CR]openssl\f[R], and uploads the archive to the configured
-\f[CR]rclone\f[R] remote location.
+\f[B]generate\f[R] [\f[I]PATH\f[R]\&... | \f[B]\-\f[R]]
+Compacts specified paths into a ZIP file (or reads paths line\-by\-line
+from standard input when \f[B]\-\f[R] is specified), encrypts it using
+\f[CR]openssl\f[R] with \f[CR]RBACKUP_ENCRYPT_PASSWORD\f[R], and uploads
+the archive to the configured \f[CR]rclone\f[R] remote location.
 .TP
 \f[B]gc\f[R]
 Purges garbage\-collected backup archives from the \f[CR]rclone\f[R]
@@ -50,6 +51,7 @@ Default \f[CR]rclone\f[R] remote destination in
 .TP
 RBACKUP_ENCRYPT_PASSWORD
 Password used for OpenSSL archive encryption and decryption.
+Must be set prior to running \f[B]generate\f[R] or \f[B]fetch\f[R].
 .TP
 RBACKUP_PATHS
 Colon\-separated (\f[CR]:\f[R]) list of default file system paths to
@@ -63,6 +65,14 @@ Default number of backup archives to keep during garbage collection.
 .EX
 export RBACKUP_ENCRYPT_PASSWORD=\(dqsecret\-passphrase\(dq
 rbackup \-\-remote myremote:backups/myhost generate /home/user/documents /home/user/pictures
+.EE
+.PP
+\f[B]Create an encrypted backup by streaming paths from standard
+input:\f[R]
+.IP
+.EX
+export RBACKUP_ENCRYPT_PASSWORD=\(dqsecret\-passphrase\(dq
+find /home/user/documents \-type f \f[B]|\f[R] rbackup \-\-remote myremote:backups/myhost generate \-
 .EE
 .PP
 \f[B]Clean up old backups, retaining the 5 most recent archives:\f[R]

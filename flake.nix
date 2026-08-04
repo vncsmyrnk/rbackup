@@ -97,7 +97,7 @@
         shellHook = ''
           export RBACKUP_RCLONE_REMOTE="name:folder"
           export RBACKUP_ENCRYPT_PASSWORD="password"
-          export RBACKUP_PATHS="./rbackup"
+          export RBACKUP_PATHS="./README.md"
         '';
       };
     in

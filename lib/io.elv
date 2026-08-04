@@ -1,3 +1,5 @@
+use str
+
 fn read-secret {|prompt|
   var old-stty = (stty -g)
   var secret = ""
@@ -12,4 +14,13 @@ fn read-secret {|prompt|
   }
 
   put $secret
+}
+
+fn read-stdin {
+  from-lines | each {|p|
+    var trimmed = (str:trim-space $p)
+      if (not-eq $trimmed "") {
+        put $trimmed
+      }
+  }
 }

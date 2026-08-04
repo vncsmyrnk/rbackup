@@ -14,7 +14,7 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 
 # SYNOPSIS
 
-**rbackup** [*OPTIONS*] **generate** [*PATH*...]
+**rbackup** [*OPTIONS*] **generate** [*PATH*... | **-**]
 **rbackup** [*OPTIONS*] **gc**
 **rbackup** [*OPTIONS*] **fetch** *INDEX*
 **rbackup** **-h** | **--help**
@@ -25,8 +25,8 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 
 # SUBCOMMANDS
 
-**generate** [*PATH*...]
-: Compacts specified paths into a ZIP file, encrypts it using `openssl`, and uploads the archive to the configured `rclone` remote location.
+**generate** [*PATH*... | **-**]
+: Compacts specified paths into a ZIP file (or reads paths line-by-line from standard input when **-** is specified), encrypts it using `openssl` with `RBACKUP_ENCRYPT_PASSWORD`, and uploads the archive to the configured `rclone` remote location.
 
 **gc**
 : Purges garbage-collected backup archives from the `rclone` remote, keeping only the specified number of recent backups.
@@ -51,7 +51,7 @@ RBACKUP_RCLONE_REMOTE
 : Default `rclone` remote destination in `REMOTE:FOLDER/PATH` format.
 
 RBACKUP_ENCRYPT_PASSWORD
-: Password used for OpenSSL archive encryption and decryption.
+: Password used for OpenSSL archive encryption and decryption. Must be set prior to running **generate** or **fetch**.
 
 RBACKUP_PATHS
 : Colon-separated (`:`) list of default file system paths to include in the backup.
@@ -66,6 +66,13 @@ RBACKUP_KEEP_COUNT
 ```sh
 export RBACKUP_ENCRYPT_PASSWORD="secret-passphrase"
 rbackup --remote myremote:backups/myhost generate /home/user/documents /home/user/pictures
+```
+
+**Create an encrypted backup by streaming paths from standard input:**
+
+```sh
+export RBACKUP_ENCRYPT_PASSWORD="secret-passphrase"
+find /home/user/documents -type f | rbackup --remote myremote:backups/myhost generate -
 ```
 
 **Clean up old backups, retaining the 5 most recent archives:**
