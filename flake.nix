@@ -75,6 +75,9 @@
           perl
           yq
           elvish-tap
+          zip
+          unzip
+          openssl
         ];
 
         preCheck = ''
