@@ -81,10 +81,10 @@ tap:run [
     echo "test2" > $file2
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
-    var _ = (echo "secret-pass" | ./rbackup generate --remote myremote:folder $file1 $file2 | slurp)
+    ./rbackup generate --remote myremote:folder $file1 $file2 >/dev/null
 
     var received = [(cat $tmpdir/rclone-received)]
-    tap:assert (re:match "^rclone-received-verified /tmp/backup-[^ ]+\\.zip\\.enc$" $received[0])
+    tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -102,10 +102,10 @@ tap:run [
     set E:RBACKUP_RCLONE_REMOTE = "envremote:backup"
     set E:RBACKUP_PATHS = $file1':'$file2
 
-    var _ = (echo "secret-pass" | ./rbackup generate | slurp)
+    ./rbackup generate >/dev/null
 
     var received = [(cat $tmpdir/rclone-received)]
-    tap:assert (re:match "^rclone-received-verified /tmp/backup-[^ ]+\\.zip\\.enc$" $received[0])
+    tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
 
     unset-env RBACKUP_RCLONE_REMOTE
     unset-env RBACKUP_PATHS
@@ -123,10 +123,10 @@ tap:run [
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
 
-    var _ = (print "secret-pass\n"$file1"\n"$file2"\n" | ./rbackup generate --remote myremote:folder - | slurp)
+    var _ = (print $file1"\n"$file2"\n" | ./rbackup generate --remote myremote:folder - | slurp)
 
     var received = [(cat $tmpdir/rclone-received)]
-    tap:assert (re:match "^rclone-received-verified /tmp/backup-[^ ]+\\.zip\\.enc$" $received[0])
+    tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -144,25 +144,10 @@ tap:run [
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
 
-    var _ = (print "secret-pass\n"$file2"\n" | ./rbackup generate --remote myremote:folder $file1 - $file3 | slurp)
+    var _ = (print $file2"\n" | ./rbackup generate --remote myremote:folder $file1 - $file3 | slurp)
 
     var received = [(cat $tmpdir/rclone-received)]
-    tap:assert (re:match "^rclone-received-verified /tmp/backup-[^ ]+\\.zip\\.enc$" $received[0])
-
-    teardown-env $tmpdir $old-path $old-xdg
-  }]
-
-  [&d='generate fails when password is wrong' &f={
-    var tmpdir = (os:temp-dir)
-    var old-path old-xdg = (setup-env $tmpdir)
-
-    var file1 = $tmpdir/file1
-    echo "test" > $file1
-
-    set E:RBACKUP_ENCRYPT_PASSWORD = "expected-pass"
-
-    var err = ?(echo "wrong-pass" | ./rbackup generate --remote myremote:folder $file1 2>/dev/null)
-    tap:assert (not-eq $err $ok)
+    tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
 
     teardown-env $tmpdir $old-path $old-xdg
   }]

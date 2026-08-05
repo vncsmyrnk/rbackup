@@ -12,6 +12,9 @@ use path
 var subcommands = [
   &generate=[
     &f={|paths opts|
+      if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
+        fail "encrypt password not set."
+      }
       var expanded-paths = []
       for p $paths {
         if (eq $p "-") {
@@ -22,12 +25,6 @@ var subcommands = [
       }
       if (== (count $expanded-paths) 0) {
         fail "you need to specify a path."
-      }
-      if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
-        fail "encrypt password not set."
-      }
-      if (not (eq (io:read-secret "encryption password: ") $E:RBACKUP_ENCRYPT_PASSWORD)) {
-        fail "input does not match encryption password set at RBACKUP_ENCRYPT_PASSWORD."
       }
       var date-suffix = (date +'%Y%m%d%H%M%S')
       var backup-target-path = '/tmp/backup-'$date-suffix'.zip'
