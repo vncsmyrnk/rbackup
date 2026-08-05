@@ -4,16 +4,16 @@
 
 A simple backup script written on top of [`rclone`](https://rclone.org/).
 
+## Usage
+
+```sh
+find . -type f | rbackup generate -
+```
+
 ## Install
 
 ```sh
 sudo make install
-```
-
-## Running from source
-
-```sh
-nix develop --command rbackup --help
 ```
 
 ## Tests
