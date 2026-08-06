@@ -192,6 +192,18 @@ tap:run [
     teardown-env $tmpdir $old-path $old-xdg
   }]
 
+  [&d='gc fails when no files to purge' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    set E:RBACKUP_KEEP_COUNT = 5
+    var err = ?(./rbackup gc --remote myremote:folder >/dev/null 2>&1)
+    tap:assert (not-eq $err $ok)
+
+    unset-env RBACKUP_KEEP_COUNT
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
   [&d='fetch subcommand end-to-end' &f={
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
@@ -199,6 +211,17 @@ tap:run [
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
     var err = ?(./rbackup fetch --remote myremote:folder 1 >/dev/null)
     tap:assert-expected $err $ok
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='fetch index out of bounds fails' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
+    var err = ?(./rbackup fetch --remote myremote:folder 10 2>/dev/null)
+    tap:assert (not-eq $err $ok)
 
     teardown-env $tmpdir $old-path $old-xdg
   }]

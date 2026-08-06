@@ -1,7 +1,5 @@
-use os
 use re
 use path
-use str
 
 fn upload {|remote file-path|
   rclone copy -v $file-path $remote
@@ -17,36 +15,11 @@ fn fetch-files {|remote|
   )
 }
 
-fn fetch {|remote index target-dir|
-  var files = [(fetch-files $remote)]
-  if (< (count $files) $index) {
-    fail "index not found."
-  }
-  var file-name = $files[(- $index 1)]
-  var backup-file-path = $target-dir$path:separator$file-name
-
+fn fetch {|remote file-name target-dir|
   rclone copy $remote'/'$file-name $target-dir
-  put $backup-file-path
+  put $target-dir$path:separator$file-name
 }
 
-fn fetch-files-to-garbage-collect {|remote keep-count|
-  var files = [(fetch-files $remote)]
-  if (> (count $files) $keep-count) {
-    put $files[$keep-count..]
-    return
-  }
-  put []
+fn remove {|remote file-name|
+  rclone deletefile $remote'/'$file-name
 }
-
-fn purge-garbage-collected {|remote keep-count|
-  var files-to-garbage-collect = (fetch-files-to-garbage-collect $remote $keep-count)
-  if (== (count $files-to-garbage-collect) 0) {
-    fail "no files to purge."
-  }
-  echo 'deleting '(count $files-to-garbage-collect)' files'
-  peach {|file|
-    rclone deletefile $remote'/'$file
-    echo 'deleted '$file
-  } $files-to-garbage-collect
-}
-

@@ -37,7 +37,20 @@ var subcommands = [
   ]
   &gc=[
     &f={|_ opts|
-      rclone:purge-garbage-collected $opts[remote] $opts[keep-count]
+      var files = [(rclone:fetch-files $opts[remote])]
+      var keep-count = (num $opts[keep-count])
+      var files-to-garbage-collect = []
+      if (> (count $files) $keep-count) {
+        set files-to-garbage-collect = $files[$keep-count..]
+      }
+      if (== (count $files-to-garbage-collect) 0) {
+        fail "no files to purge."
+      }
+      echo 'deleting '(count $files-to-garbage-collect)' files'
+      peach {|file|
+        rclone:remove $opts[remote] $file
+        echo 'deleted '$file
+      } $files-to-garbage-collect
     }
     &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [--keep NUM]"
   ]
@@ -49,8 +62,14 @@ var subcommands = [
       if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
         fail "encrypt password not set."
       }
+      var index = $positionals[0]
+      var files = [(rclone:fetch-files $opts[remote])]
+      if (< (count $files) $index) {
+        fail "index not found."
+      }
+      var file-name = $files[(- $index 1)]
       var target-dir = (os:temp-dir)
-      var backup-file-path = (rclone:fetch $opts[remote] $positionals[0] $target-dir)
+      var backup-file-path = (rclone:fetch $opts[remote] $file-name $target-dir)
       var decrypted-file-path = $target-dir$path:separator'decrypted.zip'
       openssl:decrypt $backup-file-path $decrypted-file-path $E:RBACKUP_ENCRYPT_PASSWORD
       var target-unwrapped-dir = $target-dir$path:separator'target'
