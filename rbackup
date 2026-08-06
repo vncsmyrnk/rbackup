@@ -78,29 +78,40 @@ var subcommands = [
     &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] <INDEX>"
   ]
 ]
-var opts subcommand paths = (rbackup-flag:parse $@args)
+fn main {
+  var opts subcommand paths = (rbackup-flag:parse $@args)
 
-var has-subcommand = (has-key $subcommands $subcommand)
-if (and (put $opts[help]) (not $has-subcommand)) {
-  echo 'Simple rclone wrapper for managing backups.'
-  echo "\nUsage: rbackup [FLAGS] subcommand"
-  echo "\nSubcommands: generate gc fetch"
-  exit 0
+  var has-subcommand = (has-key $subcommands $subcommand)
+  if (and (put $opts[help]) (not $has-subcommand)) {
+    echo 'Simple rclone wrapper for managing backups.'
+    echo "\nUsage: rbackup [FLAGS] subcommand"
+    echo "\nSubcommands: generate gc fetch"
+    exit 0
+  }
+
+  if (eq $subcommand "") {
+    fail "a valid subcommand is necessary."
+  }
+
+  var action = $subcommands[$subcommand]
+  if (put $opts[help]) {
+    echo 'Usage: '$action[usage]
+    exit 0
+  }
+
+  if (eq $opts[remote] "") {
+    fail "you need to specify the rclone remote."
+  }
+
+  var f~ = $action[f]
+  $f~ $paths $opts
 }
 
-if (eq $subcommand "") {
-  fail "a valid subcommand is necessary."
+var e = ?(main)
+if (not-eq $e $ok) {
+  if (eq $e[reason][type] "fail") {
+    echo $e[reason][content] >&2
+    exit 1
+  }
+  fail $e
 }
-
-var action = $subcommands[$subcommand]
-if (put $opts[help]) {
-  echo 'Usage: '$action[usage]
-  exit 0
-}
-
-if (eq $opts[remote] "") {
-  fail "you need to specify the rclone remote."
-}
-
-var f~ = $action[f]
-$f~ $paths $opts

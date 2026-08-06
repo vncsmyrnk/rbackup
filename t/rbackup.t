@@ -70,6 +70,14 @@ fn teardown-env {|tmpdir old-path old-xdg|
   os:remove-all $tmpdir
 }
 
+fn run-rbackup-expect-fail {|@args|
+  var stderr-file = (os:temp-file "rbackup-stderr*")
+  var err = ?(./rbackup $@args 2>$stderr-file >/dev/null)
+  var stderr-text = (str:trim-space (cat $stderr-file[name]))
+  os:remove $stderr-file[name]
+  put $err $stderr-text
+}
+
 tap:run [
   [&d='generate with positional args and --remote flag' &f={
     var tmpdir = (os:temp-dir)
@@ -161,8 +169,9 @@ tap:run [
 
     unset-env RBACKUP_ENCRYPT_PASSWORD
 
-    var err = ?(./rbackup generate --remote myremote:folder $file1 2>/dev/null)
+    var err stderr = (run-rbackup-expect-fail generate --remote myremote:folder $file1)
     tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "encrypt password not set."
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -197,8 +206,9 @@ tap:run [
     var old-path old-xdg = (setup-env $tmpdir)
 
     set E:RBACKUP_KEEP_COUNT = 5
-    var err = ?(./rbackup gc --remote myremote:folder >/dev/null 2>&1)
+    var err stderr = (run-rbackup-expect-fail gc --remote myremote:folder)
     tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "no files to purge."
 
     unset-env RBACKUP_KEEP_COUNT
     teardown-env $tmpdir $old-path $old-xdg
@@ -220,8 +230,31 @@ tap:run [
     var old-path old-xdg = (setup-env $tmpdir)
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
-    var err = ?(./rbackup fetch --remote myremote:folder 10 2>/dev/null)
+    var err stderr = (run-rbackup-expect-fail fetch --remote myremote:folder 10)
     tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "index not found."
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='fails when subcommand is missing' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err stderr = (run-rbackup-expect-fail --remote myremote:folder)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "a valid subcommand is necessary."
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='fails when remote is missing' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err stderr = (run-rbackup-expect-fail gc)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "you need to specify the rclone remote."
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
