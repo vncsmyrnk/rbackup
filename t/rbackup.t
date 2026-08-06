@@ -5,6 +5,8 @@ use github.com/tesujimath/elvish-tap/tap
 use os
 use str
 use re
+use ../lib/openssl
+use ../lib/zip
 
 fn setup-env {|tmpdir|
   var pwd = (pwd)
@@ -41,6 +43,7 @@ if [ -n "$target_enc" ]; then
   zip_raw="${target_enc%.enc}"
   if [ -f "$target_enc" ] && [ -f "$zip_raw" ]; then
     echo "rclone-received-verified $target_enc" >> '$tmpdir'/rclone-received
+    cp "$target_enc" '$tmpdir'/uploaded.zip.enc
   elif [ -n "$dest_dir" ]; then
     fname=$(basename "$target_enc")
     tmpzip="$dest_dir/tmp.zip"
@@ -78,6 +81,32 @@ fn run-rbackup-expect-fail {|@args|
   put $err $stderr-text
 }
 
+fn create-test-files {|files-map|
+  for k [(keys $files-map)] {
+    echo $files-map[$k] > $k
+  }
+}
+
+fn verify-uploaded-backup {|tmpdir password expected-files-map|
+  var uploaded-enc = $tmpdir/uploaded.zip.enc
+  tap:assert (os:exists $uploaded-enc)
+
+  var extract-dir = (os:temp-dir)
+  var dec-zip = $extract-dir/decrypted.zip
+  openssl:decrypt $uploaded-enc $dec-zip $password
+  zip:extract $dec-zip $extract-dir >/dev/null
+
+  for path [(keys $expected-files-map)] {
+    var content = $expected-files-map[$path]
+    var extracted-path = $extract-dir$path
+    tap:assert (os:exists $extracted-path)
+    var actual-content = (str:trim-space (cat $extracted-path))
+    tap:assert-expected $actual-content $content
+  }
+
+  os:remove-all $extract-dir
+}
+
 tap:run [
   [&d='generate with positional args and --remote flag' &f={
     var tmpdir = (os:temp-dir)
@@ -85,14 +114,15 @@ tap:run [
 
     var file1 = $tmpdir/file1
     var file2 = $tmpdir/file2
-    echo "test1" > $file1
-    echo "test2" > $file2
+    var expected-files = [&$file1="test1" &$file2="test2"]
+    create-test-files $expected-files
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
     ./rbackup generate --remote myremote:folder $file1 $file2 >/dev/null
 
     var received = [(cat $tmpdir/rclone-received)]
     tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
+    verify-uploaded-backup $tmpdir "secret-pass" $expected-files
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -103,8 +133,8 @@ tap:run [
 
     var file1 = $tmpdir/envfile1
     var file2 = $tmpdir/envfile2
-    echo "test1" > $file1
-    echo "test2" > $file2
+    var expected-files = [&$file1="test1" &$file2="test2"]
+    create-test-files $expected-files
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
     set E:RBACKUP_RCLONE_REMOTE = "envremote:backup"
@@ -114,6 +144,7 @@ tap:run [
 
     var received = [(cat $tmpdir/rclone-received)]
     tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
+    verify-uploaded-backup $tmpdir "secret-pass" $expected-files
 
     unset-env RBACKUP_RCLONE_REMOTE
     unset-env RBACKUP_PATHS
@@ -126,8 +157,8 @@ tap:run [
 
     var file1 = $tmpdir/stdinfile1
     var file2 = $tmpdir/stdinfile2
-    echo "test1" > $file1
-    echo "test2" > $file2
+    var expected-files = [&$file1="test1" &$file2="test2"]
+    create-test-files $expected-files
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
 
@@ -135,6 +166,7 @@ tap:run [
 
     var received = [(cat $tmpdir/rclone-received)]
     tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
+    verify-uploaded-backup $tmpdir "secret-pass" $expected-files
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -146,9 +178,8 @@ tap:run [
     var file1 = $tmpdir/pos1
     var file2 = $tmpdir/stdin1
     var file3 = $tmpdir/pos2
-    echo "test1" > $file1
-    echo "test2" > $file2
-    echo "test3" > $file3
+    var expected-files = [&$file1="test1" &$file2="test2" &$file3="test3"]
+    create-test-files $expected-files
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
 
@@ -156,6 +187,7 @@ tap:run [
 
     var received = [(cat $tmpdir/rclone-received)]
     tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
+    verify-uploaded-backup $tmpdir "secret-pass" $expected-files
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
