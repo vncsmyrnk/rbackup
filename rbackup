@@ -44,7 +44,8 @@ var subcommands = [
         set files-to-garbage-collect = $files[$keep-count..]
       }
       if (== (count $files-to-garbage-collect) 0) {
-        fail "no files to purge."
+        echo 'no files to purge.'
+        return
       }
       echo 'deleting '(count $files-to-garbage-collect)' files'
       peach {|file|

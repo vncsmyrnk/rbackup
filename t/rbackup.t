@@ -233,14 +233,16 @@ tap:run [
     teardown-env $tmpdir $old-path $old-xdg
   }]
 
-  [&d='gc fails when no files to purge' &f={
+  [&d='gc with no files to purge outputs message and exits 0' &f={
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
 
     set E:RBACKUP_KEEP_COUNT = 5
-    var err stderr = (run-rbackup-expect-fail gc --remote myremote:folder)
-    tap:assert (not-eq $err $ok)
-    tap:assert-expected $stderr "no files to purge."
+    var stdout-file = $tmpdir/stdout
+    var err = ?(./rbackup gc --remote myremote:folder >$stdout-file)
+    tap:assert-expected $err $ok
+    var output = (str:trim-space (cat $stdout-file))
+    tap:assert-expected $output "no files to purge."
 
     unset-env RBACKUP_KEEP_COUNT
     teardown-env $tmpdir $old-path $old-xdg
