@@ -30,7 +30,7 @@
 
       default = pkgs.stdenv.mkDerivation {
         pname = "rbackup";
-        version = "0.0.0";
+        version = "0.1.0";
 
         src = pkgs.lib.fileset.toSource {
           root = ./.;
