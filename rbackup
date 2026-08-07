@@ -48,12 +48,16 @@ var subcommands = [
         return
       }
       echo 'deleting '(count $files-to-garbage-collect)' files'
+      if (put $opts[dry-run]) {
+        echo 'this is a dry-run, listed files were not actually removed.'
+        return
+      }
       peach {|file|
         rclone:remove $opts[remote] $file
         echo 'deleted '$file
       } $files-to-garbage-collect
     }
-    &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [--keep NUM]"
+    &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [--keep NUM] [--dry-run]"
   ]
   &fetch=[
     &f={|positionals opts|

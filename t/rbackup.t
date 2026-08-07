@@ -282,6 +282,24 @@ tap:run [
     teardown-env $tmpdir $old-path $old-xdg
   }]
 
+  [&d='gc with --dry-run flag' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var stdout-file = $tmpdir/stdout
+    var err = ?(./rbackup gc --remote myremote:folder --keep 1 --dry-run >$stdout-file)
+    tap:assert-expected $err $ok
+    var output = [(cat $stdout-file)]
+    tap:assert-expected $output[0] 'deleting 2 files'
+    tap:assert-expected $output[1] 'this is a dry-run, listed files were not actually removed.'
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert-expected (count $calls) (num 1)
+    tap:assert-expected $calls[0] 'lsf --files-only --max-depth 1 --format tp myremote:folder'
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
   [&d='fails when remote is missing' &f={
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)

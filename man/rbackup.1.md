@@ -42,6 +42,9 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 -k, --keep *NUM*
 : Specify the number of backup archives to retain when running the `gc` subcommand. Defaults to `1` (or `RBACKUP_KEEP_COUNT`).
 
+-d, --dry-run
+: Perform a dry run for the `gc` subcommand, listing files that would be purged without deleting them.
+
 -h, --help
 : Display usage and help information.
 
