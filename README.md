@@ -2,7 +2,7 @@
 
 # rbackup
 
-A simple backup script written on top of [`rclone`](https://rclone.org/).
+A simple backup script written on top of [`rclone`](https://rclone.org/) powered by Nix ❤️
 
 ## Usage
 
