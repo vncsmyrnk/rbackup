@@ -48,6 +48,9 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 -d, --dry-run
 : Perform a dry run for the `gc` subcommand, listing files that would be purged without deleting them.
 
+-j, --junk-paths
+: Do not save directory names in the backup archive. Only the file names are stored. Useful for flattening the backup structure.
+
 -h, --help
 : Display usage and help information.
 
@@ -67,6 +70,9 @@ RBACKUP_PATHS
 
 RBACKUP_KEEP_COUNT
 : Default number of backup archives to keep during garbage collection.
+
+RBACKUP_JUNK_PATHS
+: Set to `1` or `true` to enable flattening of paths by default (equivalent to `-j` / `--junk-paths`).
 
 # EXAMPLES
 

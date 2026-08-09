@@ -23,9 +23,18 @@ fn parse {|@argv|
     set paths = [(str:split $path:list-separator $E:RBACKUP_PATHS)]
   }
 
+  var junk-paths = $false
+  if (has-env RBACKUP_JUNK_PATHS) {
+    var v = (get-env RBACKUP_JUNK_PATHS)
+    if (or (eq $v "1") (eq $v "true")) {
+      set junk-paths = $true
+    }
+  }
+
   var opts = [
     &remote=$rclone-remote &help=$false &dry-run=$false
     &keep-count=$keep-count &prefix=$backup-file-prefix
+    &junk-paths=$junk-paths
   ]
 
   var opts-spec = [
@@ -33,6 +42,7 @@ fn parse {|@argv|
     [&short=k &long=keep &arg-required]
     [&short=p &long=prefix &arg-required]
     [&short=d &long=dry-run]
+    [&short=j &long=junk-paths]
     [&short=h &long=help]
   ]
   var parsed-opts positional = (flag:parse-getopt $argv $opts-spec)

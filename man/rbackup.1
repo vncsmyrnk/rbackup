@@ -49,6 +49,11 @@ Defaults to \f[CR]backup\f[R] (or \f[CR]RBACKUP_FILE_PREFIX\f[R]).
 Perform a dry run for the \f[CR]gc\f[R] subcommand, listing files that
 would be purged without deleting them.
 .TP
+\-j, \(enjunk\-paths
+Do not save directory names in the backup archive.
+Only the file names are stored.
+Useful for flattening the backup structure.
+.TP
 \-h, \(enhelp
 Display usage and help information.
 .SH ENVIRONMENT
@@ -70,6 +75,10 @@ include in the backup.
 .TP
 RBACKUP_KEEP_COUNT
 Default number of backup archives to keep during garbage collection.
+.TP
+RBACKUP_JUNK_PATHS
+Set to \f[CR]1\f[R] or \f[CR]true\f[R] to enable flattening of paths by
+default (equivalent to \f[CR]\-j\f[R] / \f[CR]\-\-junk\-paths\f[R]).
 .SH EXAMPLES
 \f[B]Create an encrypted backup of specified directories:\f[R]
 .IP

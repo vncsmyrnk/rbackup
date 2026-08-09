@@ -34,7 +34,7 @@ echo "$@" >> '$tmpdir'/du-calls' > $tmpdir/du
     var zip-calls = [(cat $tmpdir/zip-calls)]
     tap:assert-expected $zip-calls [
       '-q '$target-zip' '$testfile
-      '-qr '$target-zip' '$testdir
+      '-q -r '$target-zip' '$testdir
       '-T '$target-zip
     ]
 
