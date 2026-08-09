@@ -27,8 +27,8 @@ var subcommands = [
         fail "you need to specify a path."
       }
       var date-suffix = (date +'%Y%m%d%H%M%S')
-      var backup-target-path = '/tmp/backup-'$date-suffix'.zip'
-      var encrypted-backup-target-path = '/tmp/backup-'$date-suffix'.zip.enc'
+      var backup-target-path = '/tmp/'$opts[prefix]'-'$date-suffix'.zip'
+      var encrypted-backup-target-path = '/tmp/'$opts[prefix]'-'$date-suffix'.zip.enc'
       zip:compact $backup-target-path $expanded-paths
       openssl:encrypt $backup-target-path $encrypted-backup-target-path $E:RBACKUP_ENCRYPT_PASSWORD
       rclone:upload $opts[remote] $encrypted-backup-target-path
@@ -37,7 +37,7 @@ var subcommands = [
   ]
   &gc=[
     &f={|_ opts|
-      var files = [(rclone:fetch-files $opts[remote])]
+      var files = [(rclone:fetch-files $opts[remote] $opts[prefix])]
       var keep-count = (num $opts[keep-count])
       var files-to-garbage-collect = []
       if (> (count $files) $keep-count) {
@@ -68,7 +68,7 @@ var subcommands = [
         fail "encrypt password not set."
       }
       var index = $positionals[0]
-      var files = [(rclone:fetch-files $opts[remote])]
+      var files = [(rclone:fetch-files $opts[remote] $opts[prefix])]
       if (< (count $files) $index) {
         fail "index not found."
       }
@@ -114,7 +114,7 @@ fn main {
 
 var e = ?(main)
 if (not-eq $e $ok) {
-  if (eq $e[reason][type] "fail") {
+  if (eq (kind-of $e[reason]) fail-error) {
     echo $e[reason][content] >&2
     exit 1
   }

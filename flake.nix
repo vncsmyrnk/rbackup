@@ -65,7 +65,7 @@
               pkgs.rclone
             ]
           } \
-          --prefix XDG_DATA_DIRS "$out/share"
+          --prefix XDG_DATA_DIRS : "$out/share"
         '';
 
         doCheck = true;

@@ -20,10 +20,34 @@ fi
 ' > $tmpdir/rclone
     chmod +x $tmpdir/rclone
 
-    var files = [(rclone:fetch-files dummy-remote)]
+    var files = [(rclone:fetch-files dummy-remote backup)]
     tap:assert-expected $files [
       'backup-20230102100000.zip.enc'
       'backup-20230101100000.zip.enc'
+    ]
+
+    set E:PATH = $old-path
+    os:remove-all $tmpdir
+  }]
+
+  [&d='fetch-files with custom prefix' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path = $E:PATH
+    set E:PATH = $tmpdir':'$old-path
+
+    echo '#!/bin/sh
+if [ "$1" = "lsf" ]; then
+  echo "2023-01-01 10:00:00;custom-20230101100000.zip.enc"
+  echo "2023-01-02 10:00:00;custom-20230102100000.zip.enc"
+  echo "2023-01-01 10:00:00;backup-20230101100000.zip.enc"
+fi
+' > $tmpdir/rclone
+    chmod +x $tmpdir/rclone
+
+    var files = [(rclone:fetch-files dummy-remote custom)]
+    tap:assert-expected $files [
+      'custom-20230102100000.zip.enc'
+      'custom-20230101100000.zip.enc'
     ]
 
     set E:PATH = $old-path

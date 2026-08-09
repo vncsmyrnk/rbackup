@@ -42,6 +42,9 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 -k, --keep *NUM*
 : Specify the number of backup archives to retain when running the `gc` subcommand. Defaults to `1` (or `RBACKUP_KEEP_COUNT`).
 
+-p, --prefix *PREFIX*
+: Specify a custom prefix for the backup file name. Defaults to `backup` (or `RBACKUP_FILE_PREFIX`).
+
 -d, --dry-run
 : Perform a dry run for the `gc` subcommand, listing files that would be purged without deleting them.
 
@@ -55,6 +58,9 @@ RBACKUP_RCLONE_REMOTE
 
 RBACKUP_ENCRYPT_PASSWORD
 : Password used for OpenSSL archive encryption and decryption. Must be set prior to running **generate** or **fetch**.
+
+RBACKUP_FILE_PREFIX
+: Default prefix for the backup file name.
 
 RBACKUP_PATHS
 : Colon-separated (`:`) list of default file system paths to include in the backup.
