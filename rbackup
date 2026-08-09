@@ -33,7 +33,7 @@ var subcommands = [
       openssl:encrypt $backup-target-path $encrypted-backup-target-path $E:RBACKUP_ENCRYPT_PASSWORD
       rclone:upload $opts[remote] $encrypted-backup-target-path
     }
-    &usage="rbackup generate [--remote REMOTE:FOLDER/PATH]"
+    &usage="rbackup generate [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX]"
   ]
   &gc=[
     &f={|_ opts|
@@ -57,7 +57,7 @@ var subcommands = [
         echo 'deleted '$file
       } $files-to-garbage-collect
     }
-    &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [--keep NUM] [--dry-run]"
+    &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [--keep NUM] [--dry-run]"
   ]
   &fetch=[
     &f={|positionals opts|
@@ -80,7 +80,7 @@ var subcommands = [
       var target-unwrapped-dir = $target-dir$path:separator'target'
       zip:extract $decrypted-file-path $target-unwrapped-dir
     }
-    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] <INDEX>"
+    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] <INDEX>"
   ]
 ]
 fn main {
