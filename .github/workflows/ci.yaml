@@ -23,6 +23,30 @@ jobs:
       - name: Build flake
         run: nix build .# -L
 
+  docs-check:
+    runs-on: ubuntu-latest
+    outputs:
+      docs-changed: ${{ steps.filter.outputs.docs-changed }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            docs-changed:
+              - 'man/**'
+
+  docs:
+    needs: [docs-check]
+    if: ${{ needs.docs-check.outputs.docs-changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
       - name: Check docs
         run: |
           VERSION=$(nix eval --raw .#packages.x86_64-linux.default.version)
@@ -30,7 +54,7 @@ jobs:
           git diff --exit-code
 
   release:
-    needs: ci
+    needs: [ci, docs]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:

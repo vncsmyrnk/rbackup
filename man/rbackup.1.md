@@ -1,7 +1,7 @@
 ---
 title: RBACKUP
 section: 1
-date: 2026-08-03
+date: {date}
 header: User Commands
 footer: name {version}
 author:

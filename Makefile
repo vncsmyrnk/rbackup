@@ -7,6 +7,8 @@ INSTALL ?= install
 INSTALL_PROGRAM = $(INSTALL)
 INSTALL_DATA = $(INSTALL) -m 644
 
+DATE ?= $(shell date +%Y\-%m\-%d)
+
 all: $(SRCDIR)/rbackup $(shell find $(SRCDIR)/lib -type f)
 	elvish -compileonly $?
 
@@ -32,7 +34,7 @@ uninstall:
 doc: $(SRCDIR)/man/rbackup.1
 
 $(SRCDIR)/man/rbackup.1: $(SRCDIR)/man/rbackup.1.md
-	pandoc -s -f markdown -t man -V footer="rbackup $(VERSION)" $< -o $@
+	pandoc -s -f markdown -t man -V footer="rbackup $(VERSION)" -V date="$(DATE)" $< -o $@
 
 nix:
 	nix build .# -L
