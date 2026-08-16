@@ -82,6 +82,12 @@ var subcommands = [
     }
     &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] <INDEX>"
   ]
+  &version=[
+    &f={|_ _|
+      echo $E:RBACKUP_VERSION'-'$E:RBACKUP_GIT_SHA
+    }
+    &usage="rbackup version"
+  ]
 ]
 fn main {
   var opts subcommand paths = (rbackup-flag:parse $@args)
@@ -90,7 +96,7 @@ fn main {
   if (and (put $opts[help]) (not $has-subcommand)) {
     echo 'Simple rclone wrapper for managing backups.'
     echo "\nUsage: rbackup [FLAGS] subcommand"
-    echo "\nSubcommands: generate gc fetch"
+    echo "\nSubcommands: generate gc fetch version"
     exit 0
   }
 

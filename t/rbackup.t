@@ -310,4 +310,21 @@ tap:run [
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
+
+  [&d='version outputs RBACKUP_VERSION and RBACKUP_GIT_SHA' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    set E:RBACKUP_VERSION = "1.2.3"
+    set E:RBACKUP_GIT_SHA = "abc1234"
+    var stdout-file = $tmpdir/stdout
+    var err = ?(./rbackup version --remote myremote:folder >$stdout-file)
+    tap:assert-expected $err $ok
+    var output = (str:trim-space (cat $stdout-file))
+    tap:assert-expected $output "1.2.3-abc1234"
+
+    unset-env RBACKUP_VERSION
+    unset-env RBACKUP_GIT_SHA
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
 ]

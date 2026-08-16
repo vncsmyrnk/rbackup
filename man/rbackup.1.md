@@ -17,6 +17,7 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 **rbackup** [*OPTIONS*] **generate** [*PATH*... | **-**]
 **rbackup** [*OPTIONS*] **gc**
 **rbackup** [*OPTIONS*] **fetch** *INDEX*
+**rbackup** [*OPTIONS*] **version**
 **rbackup** **-h** | **--help**
 
 # DESCRIPTION
@@ -33,6 +34,9 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 
 **fetch** *INDEX*
 : Downloads the encrypted backup at *INDEX* from the `rclone` remote, decrypts it, and extracts the contents into a temporary directory.
+
+**version**
+: Display the version of the application.
 
 # OPTIONS
 

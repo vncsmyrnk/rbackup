@@ -65,7 +65,9 @@
               pkgs.rclone
             ]
           } \
-          --prefix XDG_DATA_DIRS : "$out/share"
+          --prefix XDG_DATA_DIRS : "$out/share" \
+          --set RBACKUP_VERSION $version \
+          --set RBACKUP_GIT_SHA "${self.shortRev or self.dirtyShortRev or "dirty"}"
         '';
 
         doCheck = true;
