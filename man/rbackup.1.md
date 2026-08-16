@@ -16,7 +16,7 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 
 **rbackup** [*OPTIONS*] **generate** [*PATH*... | **-**]
 **rbackup** [*OPTIONS*] **gc**
-**rbackup** [*OPTIONS*] **fetch** *INDEX*
+**rbackup** [*OPTIONS*] **fetch**
 **rbackup** [*OPTIONS*] **version**
 **rbackup** **-h** | **--help**
 
@@ -32,8 +32,8 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 **gc**
 : Purges garbage-collected backup archives from the `rclone` remote, keeping only the specified number of recent backups.
 
-**fetch** *INDEX*
-: Downloads the encrypted backup at *INDEX* from the `rclone` remote, decrypts it, and extracts the contents into a temporary directory.
+**fetch**
+: Downloads the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote, decrypts it, and extracts the contents into a temporary directory.
 
 **version**
 : Display the version of the application.
@@ -48,6 +48,9 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 
 -p, --prefix *PREFIX*
 : Specify a custom prefix for the backup file name. Defaults to `backup` (or `RBACKUP_FILE_PREFIX`).
+
+-i, --index *INDEX*
+: Specify the index of the backup file to fetch. Defaults to `0` (the most recent backup archive).
 
 -d, --dry-run
 : Perform a dry run for the `gc` subcommand, listing files that would be purged without deleting them.
@@ -103,7 +106,7 @@ rbackup --remote myremote:backups/myhost --keep 5 gc
 **Fetch and decrypt the most recent backup:**
 
 ```sh
-rbackup --remote myremote:backups/myhost fetch 0
+rbackup --remote myremote:backups/myhost fetch
 ```
 
 # SEE ALSO

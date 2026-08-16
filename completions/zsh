@@ -21,6 +21,17 @@ function _rbackup_generate() {
     '(-h --help)'{-h,--help}'[Displays help message]'
 }
 
+function _rbackup_fetch() {
+  local context state state_descr line
+  typeset -A opt_args
+
+  _arguments -C \
+    '(-r --remote)'{-r,--remote}'=[rclone remote]:string:' \
+    '(-p --prefix)'{-p,--prefix}'=[file prefix]:string:' \
+    '(-i --index)'{-i,--index}'=[backup index]:string:' \
+    '(-h --help)'{-h,--help}'[Displays help message]'
+}
+
 function _rbackup() {
   local context state state_descr line
   typeset -A opt_args

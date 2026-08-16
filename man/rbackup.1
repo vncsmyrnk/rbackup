@@ -8,9 +8,9 @@ on top of rclone
 \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]generate\f[R]
 [\f[I]PATH\f[R]\&...
 | \f[B]\-\f[R]] \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]gc\f[R]
-\f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]fetch\f[R] \f[I]INDEX\f[R]
-\f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]version\f[R]
-\f[B]rbackup\f[R] \f[B]\-h\f[R] | \f[B]\(enhelp\f[R]
+\f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]fetch\f[R] \f[B]rbackup\f[R]
+[\f[I]OPTIONS\f[R]] \f[B]version\f[R] \f[B]rbackup\f[R] \f[B]\-h\f[R] |
+\f[B]\(enhelp\f[R]
 .SH DESCRIPTION
 \f[B]rbackup\f[R] is an Elvish script that compresses, encrypts,
 uploads, and restores backup archives using \f[CR]rclone\f[R],
@@ -27,10 +27,11 @@ the archive to the configured \f[CR]rclone\f[R] remote location.
 Purges garbage\-collected backup archives from the \f[CR]rclone\f[R]
 remote, keeping only the specified number of recent backups.
 .TP
-\f[B]fetch\f[R] \f[I]INDEX\f[R]
-Downloads the encrypted backup at \f[I]INDEX\f[R] from the
-\f[CR]rclone\f[R] remote, decrypts it, and extracts the contents into a
-temporary directory.
+\f[B]fetch\f[R]
+Downloads the encrypted backup at the specified index (defaults to
+\f[CR]0\f[R] for the most recent backup) from the \f[CR]rclone\f[R]
+remote, decrypts it, and extracts the contents into a temporary
+directory.
 .TP
 \f[B]version\f[R]
 Display the version of the application.
@@ -48,6 +49,10 @@ Defaults to \f[CR]1\f[R] (or \f[CR]RBACKUP_KEEP_COUNT\f[R]).
 \-p, \(enprefix \f[I]PREFIX\f[R]
 Specify a custom prefix for the backup file name.
 Defaults to \f[CR]backup\f[R] (or \f[CR]RBACKUP_FILE_PREFIX\f[R]).
+.TP
+\-i, \(enindex \f[I]INDEX\f[R]
+Specify the index of the backup file to fetch.
+Defaults to \f[CR]0\f[R] (the most recent backup archive).
 .TP
 \-d, \(endry\-run
 Perform a dry run for the \f[CR]gc\f[R] subcommand, listing files that
@@ -108,7 +113,7 @@ rbackup \-\-remote myremote:backups/myhost \-\-keep 5 gc
 \f[B]Fetch and decrypt the most recent backup:\f[R]
 .IP
 .EX
-rbackup \-\-remote myremote:backups/myhost fetch 0
+rbackup \-\-remote myremote:backups/myhost fetch
 .EE
 .SH SEE ALSO
 \f[CR]rclone(1)\f[R], \f[CR]openssl(1)\f[R], \f[CR]zip(1)\f[R]

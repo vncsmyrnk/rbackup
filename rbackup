@@ -62,26 +62,21 @@ var subcommands = [
   ]
   &fetch=[
     &f={|positionals opts|
-      if (== (count $positionals) 0) {
-        fail "you need to specify a valid index."
-      }
-      if (not (has-env RBACKUP_ENCRYPT_PASSWORD)) {
-        fail "encrypt password not set."
-      }
-      var index = $positionals[0]
+      var index = (num $opts[index])
       var files = [(rclone:fetch-files $opts[remote] $opts[prefix])]
       if (< (count $files) $index) {
         fail "index not found."
       }
-      var file-name = $files[(- $index 1)]
+      var file-name = $files[$index]
       var target-dir = (os:temp-dir)
+      echo 'fetching '$file-name
       var backup-file-path = (rclone:fetch $opts[remote] $file-name $target-dir)
       var decrypted-file-path = $target-dir$path:separator'decrypted.zip'
       openssl:decrypt $backup-file-path $decrypted-file-path $E:RBACKUP_ENCRYPT_PASSWORD
       var target-unwrapped-dir = $target-dir$path:separator'target'
       zip:extract $decrypted-file-path $target-unwrapped-dir
     }
-    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] <INDEX>"
+    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
   ]
   &version=[
     &f={|_ _|

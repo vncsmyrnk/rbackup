@@ -34,13 +34,14 @@ fn parse {|@argv|
   var opts = [
     &remote=$rclone-remote &help=$false &dry-run=$false
     &keep-count=$keep-count &prefix=$backup-file-prefix
-    &junk-paths=$junk-paths
+    &junk-paths=$junk-paths &index=0
   ]
 
   var opts-spec = [
     [&short=r &long=remote &arg-required]
     [&short=k &long=keep &arg-required]
     [&short=p &long=prefix &arg-required]
+    [&short=i &long=index &arg-required]
     [&short=d &long=dry-run]
     [&short=j &long=junk-paths]
     [&short=h &long=help]

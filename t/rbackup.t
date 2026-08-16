@@ -253,7 +253,18 @@ tap:run [
     var old-path old-xdg = (setup-env $tmpdir)
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
-    var err = ?(./rbackup fetch --remote myremote:folder 1 >/dev/null)
+    var err = ?(./rbackup fetch --remote myremote:folder -i 0 >/dev/null)
+    tap:assert-expected $err $ok
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='fetch defaults to index 0 when --index flag is omitted' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
+    var err = ?(./rbackup fetch --remote myremote:folder >/dev/null)
     tap:assert-expected $err $ok
 
     teardown-env $tmpdir $old-path $old-xdg
@@ -264,7 +275,7 @@ tap:run [
     var old-path old-xdg = (setup-env $tmpdir)
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
-    var err stderr = (run-rbackup-expect-fail fetch --remote myremote:folder 10)
+    var err stderr = (run-rbackup-expect-fail fetch --remote myremote:folder -i 10)
     tap:assert (not-eq $err $ok)
     tap:assert-expected $stderr "index not found."
 
