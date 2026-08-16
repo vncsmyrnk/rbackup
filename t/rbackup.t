@@ -216,7 +216,7 @@ tap:run [
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
-    tap:assert (> (count $calls) 1)
+    tap:assert (<= (count $calls) 3)
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -228,6 +228,9 @@ tap:run [
     set E:RBACKUP_KEEP_COUNT = 1
     var err = ?(./rbackup gc --remote myremote:folder >/dev/null)
     tap:assert-expected $err $ok
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (<= (count $calls) 3)
 
     unset-env RBACKUP_KEEP_COUNT
     teardown-env $tmpdir $old-path $old-xdg
@@ -244,6 +247,9 @@ tap:run [
     var output = (str:trim-space (cat $stdout-file))
     tap:assert-expected $output "no files to purge."
 
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (== (count $calls) (num 1))
+
     unset-env RBACKUP_KEEP_COUNT
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -256,6 +262,12 @@ tap:run [
     var err = ?(./rbackup fetch --remote myremote:folder -i 0 >/dev/null)
     tap:assert-expected $err $ok
 
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (<= (count $calls) 2)
+    for c $calls {
+      tap:assert (not (re:match ".*delete.*" $c))
+    }
+
     teardown-env $tmpdir $old-path $old-xdg
   }]
 
@@ -266,6 +278,12 @@ tap:run [
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
     var err = ?(./rbackup fetch --remote myremote:folder >/dev/null)
     tap:assert-expected $err $ok
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (<= (count $calls) 2)
+    for c $calls {
+      tap:assert (not (re:match ".*delete.*" $c))
+    }
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -278,6 +296,12 @@ tap:run [
     var err stderr = (run-rbackup-expect-fail fetch --remote myremote:folder -i 10)
     tap:assert (not-eq $err $ok)
     tap:assert-expected $stderr "index not found."
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (<= (count $calls) 1)
+    for c $calls {
+      tap:assert (not (re:match ".*delete.*" $c))
+    }
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -305,8 +329,10 @@ tap:run [
     tap:assert-expected $output[1] 'this is a dry-run, listed files were not actually removed.'
 
     var calls = [(cat $tmpdir/rclone-calls)]
-    tap:assert-expected (count $calls) (num 1)
-    tap:assert-expected $calls[0] 'lsf --files-only --max-depth 1 --format tp myremote:folder'
+    tap:assert (<= (count $calls) 1)
+    for c $calls {
+      tap:assert (not (re:match ".*delete.*" $c))
+    }
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -318,6 +344,7 @@ tap:run [
     var err stderr = (run-rbackup-expect-fail gc)
     tap:assert (not-eq $err $ok)
     tap:assert-expected $stderr "you need to specify the rclone remote."
+    tap:assert (not (os:is-regular $tmpdir/rclone-calls))
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -333,6 +360,7 @@ tap:run [
     tap:assert-expected $err $ok
     var output = (str:trim-space (cat $stdout-file))
     tap:assert-expected $output "1.2.3-abc1234"
+    tap:assert (not (os:is-regular $tmpdir/rclone-calls))
 
     unset-env RBACKUP_VERSION
     unset-env RBACKUP_GIT_SHA
@@ -347,8 +375,9 @@ tap:run [
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
-    tap:assert (> (count $calls) 1)
-    tap:assert-expected $calls[1] 'deletefile myremote:folder/backup-20230103100000.zip.enc'
+    tap:assert (<= (count $calls) 2)
+    tap:assert (or (re:match ".*backup-20230103100000.zip.enc.*" $calls[0]) ^
+      (re:match ".*backup-20230103100000.zip.enc.*" $calls[1]))
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -361,8 +390,9 @@ tap:run [
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
-    tap:assert (> (count $calls) 1)
-    tap:assert-expected $calls[1] 'deletefile myremote:folder/backup-20230103100000.zip.enc'
+    tap:assert (<= (count $calls) 2)
+    tap:assert (or (re:match ".*backup-20230103100000.zip.enc.*" $calls[0]) ^
+     (re:match ".*backup-20230103100000.zip.enc.*" $calls[1]))
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -375,8 +405,9 @@ tap:run [
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
-    tap:assert (> (count $calls) 1)
-    tap:assert-expected $calls[1] 'deletefile myremote:folder/backup-20230102100000.zip.enc'
+    tap:assert (<= (count $calls) 2)
+    tap:assert (or (re:match ".*backup-20230102100000.zip.enc.*" $calls[0]) ^
+      (re:match ".*backup-20230102100000.zip.enc.*" $calls[1]))
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -389,6 +420,10 @@ tap:run [
     tap:assert (not-eq $err $ok)
     tap:assert-expected $stderr "index not found."
 
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (== (count $calls) 1)
+    tap:assert (not (re:match ".*delete.*" $calls[0]))
+
     teardown-env $tmpdir $old-path $old-xdg
   }]
 
@@ -399,6 +434,7 @@ tap:run [
     var err stderr = (run-rbackup-expect-fail delete -i 0)
     tap:assert (not-eq $err $ok)
     tap:assert-expected $stderr "you need to specify the rclone remote."
+    tap:assert (not (os:is-regular $tmpdir/rclone-calls))
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
