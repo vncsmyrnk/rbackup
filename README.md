@@ -2,7 +2,9 @@
 
 # rbackup
 
-A simple backup script written on top of [`rclone`](https://rclone.org/) powered by Nix ❤️
+A simple backup script written on top of [`rclone`](https://rclone.org/) powered by zip, openssl and Nix ❤️
+
+Compress and encrypt files before pushing them to a rclone remote.
 
 ## Usage
 
