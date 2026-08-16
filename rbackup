@@ -31,6 +31,7 @@ var subcommands = [
       var encrypted-backup-target-path = '/tmp/'$opts[prefix]'-'$date-suffix'.zip.enc'
       zip:compact &junk-paths=$opts[junk-paths] $backup-target-path $expanded-paths
       openssl:encrypt $backup-target-path $encrypted-backup-target-path $E:RBACKUP_ENCRYPT_PASSWORD
+      du -shL $encrypted-backup-target-path
       rclone:upload $opts[remote] $encrypted-backup-target-path
     }
     &usage="rbackup generate [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-j|--junk-paths]"
