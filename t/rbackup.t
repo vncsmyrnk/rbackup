@@ -338,4 +338,69 @@ tap:run [
     unset-env RBACKUP_GIT_SHA
     teardown-env $tmpdir $old-path $old-xdg
   }]
+
+  [&d='delete subcommand end-to-end' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err = ?(./rbackup delete --remote myremote:folder -i 0 >/dev/null)
+    tap:assert-expected $err $ok
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (> (count $calls) 1)
+    tap:assert-expected $calls[1] 'deletefile myremote:folder/backup-20230103100000.zip.enc'
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='delete defaults to index 0 when --index flag is omitted' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err = ?(./rbackup delete --remote myremote:folder >/dev/null)
+    tap:assert-expected $err $ok
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (> (count $calls) 1)
+    tap:assert-expected $calls[1] 'deletefile myremote:folder/backup-20230103100000.zip.enc'
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='delete with explicit non-zero index' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err = ?(./rbackup delete --remote myremote:folder -i 1 >/dev/null)
+    tap:assert-expected $err $ok
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert (> (count $calls) 1)
+    tap:assert-expected $calls[1] 'deletefile myremote:folder/backup-20230102100000.zip.enc'
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='delete index out of bounds fails' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err stderr = (run-rbackup-expect-fail delete --remote myremote:folder -i 10)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "index not found."
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='delete fails when remote is missing' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err stderr = (run-rbackup-expect-fail delete -i 0)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "you need to specify the rclone remote."
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
 ]
+

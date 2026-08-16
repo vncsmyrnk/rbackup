@@ -78,6 +78,19 @@ var subcommands = [
     }
     &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
   ]
+  &delete=[
+    &f={|positionals opts|
+      var index = (num $opts[index])
+      var files = [(rclone:fetch-files $opts[remote] $opts[prefix])]
+      if (< (count $files) $index) {
+        fail "index not found."
+      }
+      var file-name = $files[$index]
+      rclone:remove $opts[remote] $file-name
+      echo 'deleted '$file-name
+    }
+    &usage="rbackup delete [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
+  ]
   &version=[
     &f={|_ _|
       echo $E:RBACKUP_VERSION'-'$E:RBACKUP_GIT_SHA
@@ -92,7 +105,7 @@ fn main {
   if (and (put $opts[help]) (not $has-subcommand)) {
     echo 'Simple rclone wrapper for managing backups.'
     echo "\nUsage: rbackup [FLAGS] subcommand"
-    echo "\nSubcommands: generate gc fetch version"
+    echo "\nSubcommands: generate gc fetch delete version"
     exit 0
   }
 

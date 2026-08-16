@@ -17,6 +17,7 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 **rbackup** [*OPTIONS*] **generate** [*PATH*... | **-**]
 **rbackup** [*OPTIONS*] **gc**
 **rbackup** [*OPTIONS*] **fetch**
+**rbackup** [*OPTIONS*] **delete**
 **rbackup** [*OPTIONS*] **version**
 **rbackup** **-h** | **--help**
 
@@ -35,6 +36,9 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 **fetch**
 : Downloads the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote, decrypts it, and extracts the contents into a temporary directory.
 
+**delete**
+: Deletes the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote.
+
 **version**
 : Display the version of the application.
 
@@ -50,7 +54,7 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 : Specify a custom prefix for the backup file name. Defaults to `backup` (or `RBACKUP_FILE_PREFIX`).
 
 -i, --index *INDEX*
-: Specify the index of the backup file to fetch. Defaults to `0` (the most recent backup archive).
+: Specify the index of the backup file to fetch or delete. Defaults to `0` (the most recent backup archive).
 
 -d, --dry-run
 : Perform a dry run for the `gc` subcommand, listing files that would be purged without deleting them.
