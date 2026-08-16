@@ -32,7 +32,7 @@ uninstall:
 doc: $(SRCDIR)/man/rbackup.1
 
 $(SRCDIR)/man/rbackup.1: $(SRCDIR)/man/rbackup.1.md
-	pandoc -s -f markdown -t man $< -o $@
+	pandoc -s -f markdown -t man -V footer="rbackup $(VERSION)" $< -o $@
 
 nix:
 	nix build .# -L

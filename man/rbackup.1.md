@@ -3,7 +3,7 @@ title: RBACKUP
 section: 1
 date: 2026-08-03
 header: User Commands
-footer: rbackup 0.1.0
+footer: name {version}
 author:
   - Vinicius Mayrink
 ---

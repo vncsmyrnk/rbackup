@@ -44,7 +44,13 @@
           ];
         };
 
-        nativeBuildInputs = with pkgs; [ makeWrapper ];
+        nativeBuildInputs = with pkgs; [
+          makeWrapper
+          pandoc
+        ];
+        buildPhase = ''
+          make doc VERSION="$version"
+        '';
 
         buildInputs = with pkgs; [ elvish ];
 

@@ -25,7 +25,8 @@ jobs:
 
       - name: Check docs
         run: |
-          nix develop --command make doc
+          VERSION=$(nix eval --raw .#packages.x86_64-linux.default.version)
+          nix develop --command make doc VERSION="$VERSION"
           git diff --exit-code
 
   release:
