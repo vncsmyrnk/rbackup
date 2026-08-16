@@ -26,6 +26,10 @@ nix develop --command make check
 
 ---
 
+## AI Usage
+
+This project uses AI as a tool to optimize and test the code. However, AI is not used to make autonomous decisions.
+
 ## Alternatives
 
 - [restic: multiple backends, first-class support for backup restoring](https://restic.net/)
