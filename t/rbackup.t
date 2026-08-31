@@ -118,7 +118,7 @@ tap:run [
     create-test-files $expected-files
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
-    ./rbackup generate --remote myremote:folder $file1 $file2 >/dev/null
+    ./rbackup generate --remote myremote:folder $file1 $file2 >/dev/null 2>&1
 
     var received = [(cat $tmpdir/rclone-received)]
     tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
@@ -140,7 +140,7 @@ tap:run [
     set E:RBACKUP_RCLONE_REMOTE = "envremote:backup"
     set E:RBACKUP_PATHS = $file1':'$file2
 
-    ./rbackup generate >/dev/null
+    ./rbackup generate >/dev/null 2>&1
 
     var received = [(cat $tmpdir/rclone-received)]
     tap:assert (re:match "^rclone-received-verified /tmp/backup-.*\\.zip\\.enc$" $received[0])
@@ -212,7 +212,7 @@ tap:run [
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
 
-    var err = ?(./rbackup gc --remote myremote:folder --keep 1 >/dev/null)
+    var err = ?(./rbackup gc --remote myremote:folder --keep 1 >/dev/null 2>&1)
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
@@ -226,7 +226,7 @@ tap:run [
     var old-path old-xdg = (setup-env $tmpdir)
 
     set E:RBACKUP_KEEP_COUNT = 1
-    var err = ?(./rbackup gc --remote myremote:folder >/dev/null)
+    var err = ?(./rbackup gc --remote myremote:folder >/dev/null 2>&1)
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
@@ -242,10 +242,11 @@ tap:run [
 
     set E:RBACKUP_KEEP_COUNT = 5
     var stdout-file = $tmpdir/stdout
-    var err = ?(./rbackup gc --remote myremote:folder >$stdout-file)
+    var stderr-file = $tmpdir/stderr
+    var err = ?(./rbackup gc --remote myremote:folder >$stdout-file 2>$stderr-file)
     tap:assert-expected $err $ok
-    var output = (str:trim-space (cat $stdout-file))
-    tap:assert-expected $output "no files to purge."
+    tap:assert-expected (str:trim-space (cat $stderr-file)) "no files to purge."
+    tap:assert-expected (cat $stdout-file | slurp) ""
 
     var calls = [(cat $tmpdir/rclone-calls)]
     tap:assert (== (count $calls) (num 1))
@@ -259,7 +260,7 @@ tap:run [
     var old-path old-xdg = (setup-env $tmpdir)
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
-    var err = ?(./rbackup fetch --remote myremote:folder -i 0 >/dev/null)
+    var err = ?(./rbackup fetch --remote myremote:folder -i 0 >/dev/null 2>&1)
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
@@ -276,7 +277,7 @@ tap:run [
     var old-path old-xdg = (setup-env $tmpdir)
 
     set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
-    var err = ?(./rbackup fetch --remote myremote:folder >/dev/null)
+    var err = ?(./rbackup fetch --remote myremote:folder >/dev/null 2>&1)
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
@@ -322,11 +323,12 @@ tap:run [
     var old-path old-xdg = (setup-env $tmpdir)
 
     var stdout-file = $tmpdir/stdout
-    var err = ?(./rbackup gc --remote myremote:folder --keep 1 --dry-run >$stdout-file)
+    var stderr-file = $tmpdir/stderr
+    var err = ?(./rbackup gc --remote myremote:folder --keep 1 --dry-run >$stdout-file 2>$stderr-file)
     tap:assert-expected $err $ok
-    var output = [(cat $stdout-file)]
-    tap:assert-expected $output[0] 'deleting 2 files'
-    tap:assert-expected $output[1] 'this is a dry-run, listed files were not actually removed.'
+    var stderr-output = [(cat $stderr-file)]
+    tap:assert-expected $stderr-output[0] 'deleting 2 files'
+    tap:assert-expected $stderr-output[1] 'this is a dry-run, listed files were not actually removed.'
 
     var calls = [(cat $tmpdir/rclone-calls)]
     tap:assert (<= (count $calls) 1)
@@ -371,7 +373,7 @@ tap:run [
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
 
-    var err = ?(./rbackup delete --remote myremote:folder -i 0 >/dev/null)
+    var err = ?(./rbackup delete --remote myremote:folder -i 0 >/dev/null 2>&1)
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
@@ -386,7 +388,7 @@ tap:run [
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
 
-    var err = ?(./rbackup delete --remote myremote:folder >/dev/null)
+    var err = ?(./rbackup delete --remote myremote:folder >/dev/null 2>&1)
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]
@@ -401,7 +403,7 @@ tap:run [
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
 
-    var err = ?(./rbackup delete --remote myremote:folder -i 1 >/dev/null)
+    var err = ?(./rbackup delete --remote myremote:folder -i 1 >/dev/null 2>&1)
     tap:assert-expected $err $ok
 
     var calls = [(cat $tmpdir/rclone-calls)]

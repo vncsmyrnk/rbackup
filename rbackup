@@ -29,10 +29,11 @@ var subcommands = [
       var date-suffix = (date +'%Y%m%d%H%M%S')
       var backup-target-path = '/tmp/'$opts[prefix]'-'$date-suffix'.zip'
       var encrypted-backup-target-path = '/tmp/'$opts[prefix]'-'$date-suffix'.zip.enc'
-      zip:compact &junk-paths=$opts[junk-paths] $backup-target-path $expanded-paths
+      zip:compact &junk-paths=$opts[junk-paths] $backup-target-path $expanded-paths >&2
       openssl:encrypt $backup-target-path $encrypted-backup-target-path $E:RBACKUP_ENCRYPT_PASSWORD
-      du -shL $encrypted-backup-target-path
-      rclone:upload $opts[remote] $encrypted-backup-target-path
+      du -shL $encrypted-backup-target-path >&2
+      rclone:upload $opts[remote] $encrypted-backup-target-path >&2
+      echo (basename $encrypted-backup-target-path)
     }
     &usage="rbackup generate [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-j|--junk-paths]"
   ]
@@ -45,17 +46,17 @@ var subcommands = [
         set files-to-garbage-collect = $files[$keep-count..]
       }
       if (== (count $files-to-garbage-collect) 0) {
-        echo 'no files to purge.'
+        echo 'no files to purge.' >&2
         return
       }
-      echo 'deleting '(count $files-to-garbage-collect)' files'
+      echo 'deleting '(count $files-to-garbage-collect)' files' >&2
       if (put $opts[dry-run]) {
-        echo 'this is a dry-run, listed files were not actually removed.'
+        echo 'this is a dry-run, listed files were not actually removed.' >&2
         return
       }
       peach {|file|
         rclone:remove $opts[remote] $file
-        echo 'deleted '$file
+        echo $file
       } $files-to-garbage-collect
     }
     &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [--keep NUM] [--dry-run]"
@@ -69,12 +70,13 @@ var subcommands = [
       }
       var file-name = $files[$index]
       var target-dir = (os:temp-dir)
-      echo 'fetching '$file-name
+      echo 'fetching '$file-name >&2
       var backup-file-path = (rclone:fetch $opts[remote] $file-name $target-dir)
       var decrypted-file-path = $target-dir$path:separator'decrypted.zip'
-      openssl:decrypt $backup-file-path $decrypted-file-path $E:RBACKUP_ENCRYPT_PASSWORD
+      openssl:decrypt $backup-file-path $decrypted-file-path $E:RBACKUP_ENCRYPT_PASSWORD >&2
       var target-unwrapped-dir = $target-dir$path:separator'target'
-      zip:extract $decrypted-file-path $target-unwrapped-dir
+      zip:extract $decrypted-file-path $target-unwrapped-dir >&2
+      echo $target-unwrapped-dir
     }
     &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
   ]
@@ -87,7 +89,7 @@ var subcommands = [
       }
       var file-name = $files[$index]
       rclone:remove $opts[remote] $file-name
-      echo 'deleted '$file-name
+      echo $file-name
     }
     &usage="rbackup delete [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
   ]
