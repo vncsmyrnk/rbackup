@@ -9,8 +9,9 @@ on top of rclone
 [\f[I]PATH\f[R]\&...
 | \f[B]\-\f[R]] \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]gc\f[R]
 \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]fetch\f[R] \f[B]rbackup\f[R]
-\f[B]decrypt\f[R] \f[I]FILE\f[R] \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]]
-\f[B]delete\f[R] \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]version\f[R]
+\f[B]decrypt\f[R] [\f[I]FILE\f[R]\&...
+| \f[B]\-\f[R]] \f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]delete\f[R]
+\f[B]rbackup\f[R] [\f[I]OPTIONS\f[R]] \f[B]version\f[R]
 \f[B]rbackup\f[R] \f[B]\-h\f[R] | \f[B]\(enhelp\f[R]
 .SH DESCRIPTION
 \f[B]rbackup\f[R] is an Elvish script that compresses, encrypts,
@@ -33,9 +34,11 @@ Downloads the encrypted backup at the specified index (defaults to
 \f[CR]0\f[R] for the most recent backup) from the \f[CR]rclone\f[R]
 remote into a temporary directory.
 .TP
-\f[B]decrypt\f[R] \f[I]FILE\f[R]
-Decrypts an encrypted backup archive and extracts its contents into a
-temporary directory.
+\f[B]decrypt\f[R] [\f[I]FILE\f[R]\&... | \f[B]\-\f[R]]
+Decrypts one or more encrypted backup archives and extracts their
+contents into temporary directories.
+Paths can be specified as positional arguments or read line\-by\-line
+from standard input when \f[B]\-\f[R] is specified.
 .TP
 \f[B]delete\f[R]
 Deletes the encrypted backup at the specified index (defaults to
@@ -129,6 +132,12 @@ rbackup \-\-remote myremote:backups/myhost fetch
 .IP
 .EX
 rbackup decrypt /tmp/backup\-20230101100000.zip.enc
+.EE
+.PP
+\f[B]Fetch and decrypt multiple files at once:\f[R]
+.IP
+.EX
+rbackup fetch \-\-range 0\-2 2>/dev/null \f[B]|\f[R] rbackup decrypt \- 2>/dev/null
 .EE
 .SH SEE ALSO
 \f[CR]rclone(1)\f[R], \f[CR]openssl(1)\f[R], \f[CR]zip(1)\f[R]

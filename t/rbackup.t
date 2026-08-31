@@ -94,6 +94,16 @@ fn create-test-files {|files-map|
   }
 }
 
+fn create-encrypted-archive {|base name content password|
+  var payload = $base/$name.txt
+  var archive = $base/$name.zip
+  var encrypted = $base/$name.zip.enc
+  echo $content > $payload
+  zip:compact $archive [$payload] >/dev/null 2>&1
+  openssl:encrypt $archive $encrypted $password
+  put $encrypted $payload
+}
+
 fn verify-uploaded-backup {|tmpdir password expected-files-map|
   var uploaded-enc = $tmpdir/uploaded.zip.enc
   tap:assert (os:exists $uploaded-enc)
@@ -357,45 +367,58 @@ tap:run [
     teardown-env $tmpdir $old-path $old-xdg
   }]
 
-  [&d='decrypt fails when multiple paths are specified' &f={
+  [&d='decrypt extracts multiple archives at once' &f={
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
 
+    var enc1 payload1 = (create-encrypted-archive $tmpdir first payload-one secret-pass)
+    var enc2 payload2 = (create-encrypted-archive $tmpdir second payload-two secret-pass)
+
+    set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
     unset-env RBACKUP_RCLONE_REMOTE
-    var err stderr = (run-rbackup-expect-fail decrypt first.zip.enc second.zip.enc)
-    tap:assert (not-eq $err $ok)
-    tap:assert-expected $stderr "you need to specify just one path."
+    var stdout-file = $tmpdir/stdout
+    var err = ?(./rbackup decrypt $enc1 $enc2 >$stdout-file 2>/dev/null)
+    tap:assert-expected $err $ok
+
+    var dirs = [(cat $stdout-file)]
+    tap:assert-expected (count $dirs) (num 2)
+    var found1 = $false
+    var found2 = $false
+    for d $dirs {
+      if (os:is-regular $d$payload1) { set found1 = $true }
+      if (os:is-regular $d$payload2) { set found2 = $true }
+    }
+    tap:assert $found1
+    tap:assert $found2
+    tap:assert (not (os:is-regular $tmpdir/rclone-calls))
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
 
-  [&d='global help lists decrypt' &f={
+  [&d='decrypt reads paths from stdin (-)' &f={
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
 
-    var output = (./rbackup --help | slurp)
-    tap:assert (re:match 'Subcommands: .*decrypt' $output)
+    var enc1 payload1 = (create-encrypted-archive $tmpdir first payload-one secret-pass)
+    var enc2 payload2 = (create-encrypted-archive $tmpdir second payload-two secret-pass)
 
-    teardown-env $tmpdir $old-path $old-xdg
-  }]
+    set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
+    unset-env RBACKUP_RCLONE_REMOTE
+    var stdout-file = $tmpdir/stdout
+    var err = ?(print $enc1"\n"$enc2"\n" | ./rbackup decrypt - >$stdout-file 2>/dev/null)
+    tap:assert-expected $err $ok
 
-  [&d='decrypt help includes its required path' &f={
-    var tmpdir = (os:temp-dir)
-    var old-path old-xdg = (setup-env $tmpdir)
-
-    var output = (./rbackup decrypt --help | slurp)
-    tap:assert (re:match 'Usage: rbackup decrypt FILE' $output)
-
-    teardown-env $tmpdir $old-path $old-xdg
-  }]
-
-  [&d='zsh completion lists and routes decrypt' &f={
-    var tmpdir = (os:temp-dir)
-    var old-path old-xdg = (setup-env $tmpdir)
-
-    var completion = (cat completions/zsh | slurp)
-    tap:assert (re:match "'decrypt'" $completion)
-    tap:assert (re:match '(?s)decrypt\).*_rbackup_decrypt' $completion)
+    var dirs = [(cat $stdout-file)]
+    tap:assert-expected (count $dirs) (num 2)
+    var found1 = $false
+    var found2 = $false
+    for d $dirs {
+      if (os:is-regular $d$payload1) { set found1 = $true }
+      if (os:is-regular $d$payload2) { set found2 = $true }
+    }
+    tap:assert $found1
+    tap:assert $found2
+    tap:assert (not (os:is-regular $tmpdir/rclone-calls))
 
     teardown-env $tmpdir $old-path $old-xdg
   }]

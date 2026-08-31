@@ -17,7 +17,7 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 **rbackup** [*OPTIONS*] **generate** [*PATH*... | **-**]
 **rbackup** [*OPTIONS*] **gc**
 **rbackup** [*OPTIONS*] **fetch**
-**rbackup** **decrypt** *FILE*
+**rbackup** **decrypt** [*FILE*... | **-**]
 **rbackup** [*OPTIONS*] **delete**
 **rbackup** [*OPTIONS*] **version**
 **rbackup** **-h** | **--help**
@@ -37,8 +37,8 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 **fetch**
 : Downloads the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote into a temporary directory.
 
-**decrypt** *FILE*
-: Decrypts an encrypted backup archive and extracts its contents into a temporary directory.
+**decrypt** [*FILE*... | **-**]
+: Decrypts one or more encrypted backup archives and extracts their contents into temporary directories. Paths can be specified as positional arguments or read line-by-line from standard input when **-** is specified.
 
 **delete**
 : Deletes the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote.
@@ -121,6 +121,12 @@ rbackup --remote myremote:backups/myhost fetch
 
 ```sh
 rbackup decrypt /tmp/backup-20230101100000.zip.enc
+```
+
+**Fetch and decrypt multiple files at once:**
+
+```sh
+rbackup fetch --range 0-2 2>/dev/null | rbackup decrypt - 2>/dev/null
 ```
 
 # SEE ALSO

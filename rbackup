@@ -85,18 +85,33 @@ var subcommands = [
   ]
   &decrypt=[
     &f={|paths opts|
-      if (or (== (count $paths) 0) (> (count $paths) 1)) {
-        fail "you need to specify just one path."
+      var expanded-paths = []
+      for p $paths {
+        if (eq $p "-") {
+          set expanded-paths = [$@expanded-paths (io:read-stdin)]
+        } else {
+          set expanded-paths = [$@expanded-paths $p]
+        }
       }
-      var path = $paths[0]
+      if (== (count $expanded-paths) 0) {
+        fail "you need to specify at least one path."
+      }
       var target-dir = (os:temp-dir)
-      var decrypted-file-path = $target-dir$path:separator'decrypted.zip'
-      openssl:decrypt $path $decrypted-file-path $E:RBACKUP_ENCRYPT_PASSWORD >&2
-      var target-unwrapped-dir = $target-dir$path:separator'target'
-      zip:extract $decrypted-file-path $target-unwrapped-dir >&2
-      echo $target-unwrapped-dir
+      var d~ = {|file|
+        var file-slug = (re:replace '[^0-9a-zA-Z]' '-' (basename $file))
+        var target-sub-dir = $target-dir$path:separator$file-slug
+        os:mkdir $target-dir$path:separator$file-slug
+        var decrypted-file = $target-sub-dir$path:separator'decrypted.zip'
+        openssl:decrypt $file $decrypted-file $E:RBACKUP_ENCRYPT_PASSWORD >&2
+        var target-unwrapped-dir = $target-sub-dir$path:separator'target'
+        zip:extract $decrypted-file $target-unwrapped-dir >&2
+        echo $target-unwrapped-dir
+      }
+      peach {|p|
+        $d~ $p
+      } $expanded-paths
     }
-    &usage="rbackup decrypt FILE"
+    &usage="rbackup decrypt [FILE... | -]"
     &requires-remote=$false
   ]
   &delete=[
