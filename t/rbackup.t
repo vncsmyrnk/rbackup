@@ -53,11 +53,12 @@ if [ -n "$target_enc" ]; then
     cp "$target_enc" '$tmpdir'/uploaded.zip.enc
   elif [ -n "$dest_dir" ]; then
     fname=$(basename "$target_enc")
-    tmpzip="$dest_dir/tmp.zip"
-    echo "test-payload" > "$dest_dir/payload.txt"
-    zip -q "$tmpzip" "$dest_dir/payload.txt"
+    tmpzip="$dest_dir/tmp.$$.zip"
+    payload="$dest_dir/payload.$$.txt"
+    echo "test-payload" > "$payload"
+    zip -q "$tmpzip" "$payload"
     printf "%s\n" "$RBACKUP_ENCRYPT_PASSWORD" | openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -salt -in "$tmpzip" -out "$dest_dir/$fname" -pass stdin
-    rm -f "$tmpzip" "$dest_dir/payload.txt"
+    rm -f "$tmpzip" "$payload"
   fi
 else
   echo "2023-01-01 10:00:00;backup-20230101100000.zip.enc"
@@ -328,6 +329,78 @@ tap:run [
     teardown-env $tmpdir $old-path $old-xdg
   }]
 
+  [&d='fetch with --range fetches multiple files' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var stdout-file = $tmpdir/stdout
+    var err = ?(./rbackup fetch --remote myremote:folder --range 0-2 >$stdout-file 2>/dev/null)
+    tap:assert-expected $err $ok
+
+    var fetched = [(cat $stdout-file)]
+    tap:assert-expected (count $fetched) (num 2)
+    for f $fetched {
+      tap:assert (re:match '\.zip\.enc$' $f)
+      tap:assert (os:is-regular $f)
+    }
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert-expected (count $calls) (num 3)
+    var joined-calls = (str:join "\n" $calls)
+    tap:assert (re:match '(?m)copy .*backup-20230103100000.zip.enc' $joined-calls)
+    tap:assert (re:match '(?m)copy .*backup-20230102100000.zip.enc' $joined-calls)
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='fetch with --range 0-$ fetches all files' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var stdout-file = $tmpdir/stdout
+    var err = ?(./rbackup fetch --remote myremote:folder --range '0-$' >$stdout-file 2>/dev/null)
+    tap:assert-expected $err $ok
+
+    var fetched = [(cat $stdout-file)]
+    tap:assert-expected (count $fetched) (num 3)
+    for f $fetched {
+      tap:assert (os:is-regular $f)
+    }
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert-expected (count $calls) (num 4)
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='fetch with invalid range format fails' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err stderr = (run-rbackup-expect-fail fetch --remote myremote:folder --range abc)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "invalid range format."
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert-expected (count $calls) (num 1)
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='fetch with out of bounds range fails' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err stderr = (run-rbackup-expect-fail fetch --remote myremote:folder --range 5-9)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "invalid range value."
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert-expected (count $calls) (num 1)
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
   [&d='decrypt subcommand extracts one encrypted archive without a remote' &f={
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
@@ -362,7 +435,7 @@ tap:run [
     set E:RBACKUP_PATHS = "fallback.zip.enc"
     var err stderr = (run-rbackup-expect-fail decrypt)
     tap:assert (not-eq $err $ok)
-    tap:assert-expected $stderr "you need to specify just one path."
+    tap:assert-expected $stderr "you need to specify at least one path."
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -541,6 +614,38 @@ tap:run [
     var calls = [(cat $tmpdir/rclone-calls)]
     tap:assert (== (count $calls) 1)
     tap:assert (not (re:match ".*delete.*" $calls[0]))
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='delete with --range deletes multiple files' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err = ?(./rbackup delete --remote myremote:folder --range 0-2 >/dev/null 2>&1)
+    tap:assert-expected $err $ok
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert-expected (count $calls) (num 3)
+    var joined-calls = (str:join "\n" $calls)
+    tap:assert (re:match '(?m)deletefile .*backup-20230103100000.zip.enc' $joined-calls)
+    tap:assert (re:match '(?m)deletefile .*backup-20230102100000.zip.enc' $joined-calls)
+    tap:assert (not (re:match '(?m)deletefile .*backup-20230101100000.zip.enc' $joined-calls))
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='delete with out of bounds range fails' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var err stderr = (run-rbackup-expect-fail delete --remote myremote:folder --range 5-9)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "invalid range value."
+
+    var calls = [(cat $tmpdir/rclone-calls)]
+    tap:assert-expected (count $calls) (num 1)
+    tap:assert (not (re:match ".*deletefile.*" $calls[0]))
 
     teardown-env $tmpdir $old-path $old-xdg
   }]

@@ -33,6 +33,7 @@ remote, keeping only the specified number of recent backups.
 Downloads the encrypted backup at the specified index (defaults to
 \f[CR]0\f[R] for the most recent backup) from the \f[CR]rclone\f[R]
 remote into a temporary directory.
+Multiple backups can be selected at once with \f[CR]\-\-range\f[R].
 .TP
 \f[B]decrypt\f[R] [\f[I]FILE\f[R]\&... | \f[B]\-\f[R]]
 Decrypts one or more encrypted backup archives and extracts their
@@ -44,6 +45,7 @@ from standard input when \f[B]\-\f[R] is specified.
 Deletes the encrypted backup at the specified index (defaults to
 \f[CR]0\f[R] for the most recent backup) from the \f[CR]rclone\f[R]
 remote.
+Multiple backups can be selected at once with \f[CR]\-\-range\f[R].
 .TP
 \f[B]version\f[R]
 Display the version of the application.
@@ -65,6 +67,14 @@ Defaults to \f[CR]backup\f[R] (or \f[CR]RBACKUP_FILE_PREFIX\f[R]).
 \-i, \(enindex \f[I]INDEX\f[R]
 Specify the index of the backup file to fetch or delete.
 Defaults to \f[CR]0\f[R] (the most recent backup archive).
+Ignored when \f[CR]\-\-range\f[R] is set.
+.TP
+\(enrange \f[I]RANGE\f[R]
+Select a range of backup files to fetch or delete, in
+\f[CR]MIN\-MAX\f[R] format (zero\-based, \f[CR]MAX\f[R] exclusive).
+\f[CR]$\f[R] can be used as \f[CR]MAX\f[R] to select through the oldest
+backup (e.g.\ \f[CR]0\-$\f[R] selects all backups).
+Overrides \f[CR]\-\-index\f[R].
 .TP
 \-d, \(endry\-run
 Perform a dry run for the \f[CR]gc\f[R] subcommand, listing files that
@@ -138,6 +148,12 @@ rbackup decrypt /tmp/backup\-20230101100000.zip.enc
 .IP
 .EX
 rbackup fetch \-\-range 0\-2 2>/dev/null \f[B]|\f[R] rbackup decrypt \- 2>/dev/null
+.EE
+.PP
+\f[B]Delete the three most recent backups:\f[R]
+.IP
+.EX
+rbackup delete \-\-remote myremote:backups/myhost \-\-range 0\-3
 .EE
 .SH SEE ALSO
 \f[CR]rclone(1)\f[R], \f[CR]openssl(1)\f[R], \f[CR]zip(1)\f[R]

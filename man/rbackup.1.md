@@ -35,13 +35,13 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 : Purges garbage-collected backup archives from the `rclone` remote, keeping only the specified number of recent backups.
 
 **fetch**
-: Downloads the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote into a temporary directory.
+: Downloads the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote into a temporary directory. Multiple backups can be selected at once with `--range`.
 
 **decrypt** [*FILE*... | **-**]
 : Decrypts one or more encrypted backup archives and extracts their contents into temporary directories. Paths can be specified as positional arguments or read line-by-line from standard input when **-** is specified.
 
 **delete**
-: Deletes the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote.
+: Deletes the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote. Multiple backups can be selected at once with `--range`.
 
 **version**
 : Display the version of the application.
@@ -58,7 +58,10 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 : Specify a custom prefix for the backup file name. Defaults to `backup` (or `RBACKUP_FILE_PREFIX`).
 
 -i, --index *INDEX*
-: Specify the index of the backup file to fetch or delete. Defaults to `0` (the most recent backup archive).
+: Specify the index of the backup file to fetch or delete. Defaults to `0` (the most recent backup archive). Ignored when `--range` is set.
+
+--range *RANGE*
+: Select a range of backup files to fetch or delete, in `MIN-MAX` format (zero-based, `MAX` exclusive). `$` can be used as `MAX` to select through the oldest backup (e.g. `0-$` selects all backups). Overrides `--index`.
 
 -d, --dry-run
 : Perform a dry run for the `gc` subcommand, listing files that would be purged without deleting them.
@@ -127,6 +130,12 @@ rbackup decrypt /tmp/backup-20230101100000.zip.enc
 
 ```sh
 rbackup fetch --range 0-2 2>/dev/null | rbackup decrypt - 2>/dev/null
+```
+
+**Delete the three most recent backups:**
+
+```sh
+rbackup delete --remote myremote:backups/myhost --range 0-3
 ```
 
 # SEE ALSO

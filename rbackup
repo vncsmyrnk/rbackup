@@ -9,6 +9,29 @@ use rbackup/openssl
 use os
 use path
 use str
+use re
+
+fn filter-files {|files index range|
+  var files-count = (count $files)
+  var filtered-files = []
+  if (re:match '^\d+-[\d$]+' $range) {
+    var range = [(re:split '-' $range)]
+    var max = (num (str:replace '$' (to-string $files-count) $range[1]))
+    var min = (num $range[0])
+    if (or (> $max $files-count) (>= $min $max)) {
+      fail "invalid range value."
+    }
+    set filtered-files = $files[$range[0]..(str:replace '$' (to-string $files-count) $range[1])]
+  } elif (eq $range '') {
+    if (< $files-count $index) {
+      fail "index not found."
+    }
+    set filtered-files = [$files[$index]]
+  } else {
+    fail "invalid range format."
+  }
+  put $filtered-files
+}
 
 var subcommands = [
   &generate=[
@@ -69,18 +92,17 @@ var subcommands = [
   ]
   &fetch=[
     &f={|positionals opts|
-      var index = (num $opts[index])
       var files = [(rclone:fetch-files $opts[remote] $opts[prefix])]
-      if (< (count $files) $index) {
-        fail "index not found."
-      }
-      var file-name = $files[$index]
+      var files-count = (count $files)
+      var filtered-files = (filter-files $files $opts[index] $opts[range])
       var target-dir = (os:temp-dir)
-      echo 'fetching '$file-name >&2
-      var backup-file-path = (rclone:fetch $opts[remote] $file-name $target-dir)
-      echo $backup-file-path
+      peach {|file|
+        echo 'fetching '$file >&2
+        var backup-file-path = (rclone:fetch $opts[remote] $file $target-dir)
+        echo $backup-file-path
+      } $filtered-files
     }
-    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
+    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX] [--range RANGE]"
     &requires-remote=$true
   ]
   &decrypt=[
@@ -118,14 +140,17 @@ var subcommands = [
     &f={|positionals opts|
       var index = (num $opts[index])
       var files = [(rclone:fetch-files $opts[remote] $opts[prefix])]
-      if (< (count $files) $index) {
-        fail "index not found."
+      var filtered-files = (filter-files $files $opts[index] $opts[range])
+      var d~ = {|file|
+        echo 'deleting '$file >&2
+        rclone:remove $opts[remote] $file
+        echo $file
       }
-      var file-name = $files[$index]
-      rclone:remove $opts[remote] $file-name
-      echo $file-name
+      peach {|p|
+        $d~ $p
+      } $filtered-files
     }
-    &usage="rbackup delete [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
+    &usage="rbackup delete [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX] [--range RANGE]"
     &requires-remote=$true
   ]
   &version=[
