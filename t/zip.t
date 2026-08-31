@@ -6,7 +6,6 @@ use ../lib/zip
 use os
 use str
 
-
 tap:run [
   [&d='compact files and directories' &f={
     var tmpdir = (os:temp-dir)
@@ -77,7 +76,6 @@ echo "$@" >> '$tmpdir'/du-calls' > $tmpdir/du
     var stderr-output = (str:trim-space (slurp < $tmpdir/stderr.log))
 
     tap:assert-expected $stderr-output 'ignoring '$non-existent' as it does not exist.'
-
 
     set E:PATH = $old-path
     os:remove-all $tmpdir
