@@ -32,6 +32,14 @@ function _rbackup_fetch() {
     '(-h --help)'{-h,--help}'[Displays help message]'
 }
 
+function _rbackup_decrypt() {
+  local context state state_descr line
+  typeset -A opt_args
+
+  _arguments -C '(-h --help)'{-h,--help}'[Displays help message]'
+  _files
+}
+
 function _rbackup_delete() {
   local context state state_descr line
   typeset -A opt_args
@@ -62,6 +70,7 @@ function _rbackup() {
       'gc'
       'fetch'
       'delete'
+      'decrypt'
       'version'
     )
     _describe 'commands' choices && ret=0
@@ -76,6 +85,9 @@ function _rbackup() {
       ;;
     fetch)
       _rbackup_fetch "$@" && ret=0
+      ;;
+    decrypt)
+      _rbackup_decrypt "$@" && ret=0
       ;;
     delete)
       _rbackup_delete "$@" && ret=0

@@ -17,6 +17,7 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 **rbackup** [*OPTIONS*] **generate** [*PATH*... | **-**]
 **rbackup** [*OPTIONS*] **gc**
 **rbackup** [*OPTIONS*] **fetch**
+**rbackup** **decrypt** *FILE*
 **rbackup** [*OPTIONS*] **delete**
 **rbackup** [*OPTIONS*] **version**
 **rbackup** **-h** | **--help**
@@ -34,7 +35,10 @@ rbackup - simple encrypted backup manager written in Elvish and built on top of 
 : Purges garbage-collected backup archives from the `rclone` remote, keeping only the specified number of recent backups.
 
 **fetch**
-: Downloads the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote, decrypts it, and extracts the contents into a temporary directory.
+: Downloads the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote into a temporary directory.
+
+**decrypt** *FILE*
+: Decrypts an encrypted backup archive and extracts its contents into a temporary directory.
 
 **delete**
 : Deletes the encrypted backup at the specified index (defaults to `0` for the most recent backup) from the `rclone` remote.
@@ -71,7 +75,7 @@ RBACKUP_RCLONE_REMOTE
 : Default `rclone` remote destination in `REMOTE:FOLDER/PATH` format.
 
 RBACKUP_ENCRYPT_PASSWORD
-: Password used for OpenSSL archive encryption and decryption. Must be set prior to running **generate** or **fetch**.
+: Password used for OpenSSL archive encryption and decryption. Must be set prior to running **generate** or **decrypt**.
 
 RBACKUP_FILE_PREFIX
 : Default prefix for the backup file name.
@@ -107,10 +111,16 @@ find /home/user/documents -type f | rbackup --remote myremote:backups/myhost gen
 rbackup --remote myremote:backups/myhost --keep 5 gc
 ```
 
-**Fetch and decrypt the most recent backup:**
+**Fetch the most recent encrypted backup:**
 
 ```sh
 rbackup --remote myremote:backups/myhost fetch
+```
+
+**Decrypt and extract a downloaded backup:**
+
+```sh
+rbackup decrypt /tmp/backup-20230101100000.zip.enc
 ```
 
 # SEE ALSO

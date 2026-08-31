@@ -1,6 +1,5 @@
 use str
 use flag
-use path
 
 fn parse {|@argv|
   var rclone-remote = ""
@@ -16,11 +15,6 @@ fn parse {|@argv|
   var keep-count = 1
   if (has-env RBACKUP_KEEP_COUNT) {
     set keep-count = (get-env RBACKUP_KEEP_COUNT)
-  }
-
-  var paths = []
-  if (has-env RBACKUP_PATHS) {
-    set paths = [(str:split $path:list-separator $E:RBACKUP_PATHS)]
   }
 
   var junk-paths = $false
@@ -63,9 +57,9 @@ fn parse {|@argv|
 
   var first-positional
   if (== (count $positional) 0) {
-    put $opts '' $paths
+    put $opts '' []
     return
   }
 
-  put $opts $positional[0] $paths
+  put $opts $positional[0] []
 }

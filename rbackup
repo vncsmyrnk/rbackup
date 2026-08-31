@@ -8,6 +8,7 @@ use rbackup/zip
 use rbackup/openssl
 use os
 use path
+use str
 
 var subcommands = [
   &generate=[
@@ -23,6 +24,9 @@ var subcommands = [
           set expanded-paths = [$@expanded-paths $p]
         }
       }
+      if (and (== (count $expanded-paths) 0) (has-env RBACKUP_PATHS)) {
+        set expanded-paths = [(str:split $path:list-separator $E:RBACKUP_PATHS)]
+      }
       if (== (count $expanded-paths) 0) {
         fail "you need to specify a path."
       }
@@ -36,6 +40,7 @@ var subcommands = [
       echo (basename $encrypted-backup-target-path)
     }
     &usage="rbackup generate [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-j|--junk-paths]"
+    &requires-remote=$true
   ]
   &gc=[
     &f={|_ opts|
@@ -60,6 +65,7 @@ var subcommands = [
       } $files-to-garbage-collect
     }
     &usage="rbackup gc [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [--keep NUM] [--dry-run]"
+    &requires-remote=$true
   ]
   &fetch=[
     &f={|positionals opts|
@@ -72,13 +78,26 @@ var subcommands = [
       var target-dir = (os:temp-dir)
       echo 'fetching '$file-name >&2
       var backup-file-path = (rclone:fetch $opts[remote] $file-name $target-dir)
+      echo $backup-file-path
+    }
+    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
+    &requires-remote=$true
+  ]
+  &decrypt=[
+    &f={|paths opts|
+      if (or (== (count $paths) 0) (> (count $paths) 1)) {
+        fail "you need to specify just one path."
+      }
+      var path = $paths[0]
+      var target-dir = (os:temp-dir)
       var decrypted-file-path = $target-dir$path:separator'decrypted.zip'
-      openssl:decrypt $backup-file-path $decrypted-file-path $E:RBACKUP_ENCRYPT_PASSWORD >&2
+      openssl:decrypt $path $decrypted-file-path $E:RBACKUP_ENCRYPT_PASSWORD >&2
       var target-unwrapped-dir = $target-dir$path:separator'target'
       zip:extract $decrypted-file-path $target-unwrapped-dir >&2
       echo $target-unwrapped-dir
     }
-    &usage="rbackup fetch [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
+    &usage="rbackup decrypt FILE"
+    &requires-remote=$false
   ]
   &delete=[
     &f={|positionals opts|
@@ -92,22 +111,23 @@ var subcommands = [
       echo $file-name
     }
     &usage="rbackup delete [--remote REMOTE:FOLDER/PATH] [-p|--prefix PREFIX] [-i|--index INDEX]"
+    &requires-remote=$true
   ]
   &version=[
     &f={|_ _|
       echo $E:RBACKUP_VERSION'-'$E:RBACKUP_GIT_SHA
     }
     &usage="rbackup version"
+    &requires-remote=$false
   ]
 ]
 fn main {
   var opts subcommand paths = (rbackup-flag:parse $@args)
-
   var has-subcommand = (has-key $subcommands $subcommand)
   if (and (put $opts[help]) (not $has-subcommand)) {
     echo 'Simple rclone wrapper for managing backups.'
     echo "\nUsage: rbackup [FLAGS] subcommand"
-    echo "\nSubcommands: generate gc fetch delete version"
+    echo "\nSubcommands: generate gc fetch decrypt delete version"
     exit 0
   }
 
@@ -121,7 +141,7 @@ fn main {
     exit 0
   }
 
-  if (eq $opts[remote] "") {
+  if (and (eq $opts[remote] "") (put $action[requires-remote])) {
     fail "you need to specify the rclone remote."
   }
 

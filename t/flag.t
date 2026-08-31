@@ -30,22 +30,13 @@ tap:run [
     tap:assert-expected $paths [path/to/backup]
     unset-env RBACKUP_RCLONE_REMOTE
   }]
-  [&d='parse with environment RBACKUP_PATHS fallback' &f={
-    setup-env
-    set-env RBACKUP_PATHS 'path1'$path:list-separator'path2'
-    var opts sub paths = (flag:parse -r envremote)
-    tap:assert-expected $opts [&remote=envremote &help=$false &dry-run=$false &keep-count=1 &prefix=backup &junk-paths=$false &index=0]
-    tap:assert-expected $sub ''
-    tap:assert-expected $paths [path1 path2]
-    unset-env RBACKUP_PATHS
-  }]
-  [&d='parse with positional args and RBACKUP_PATHS' &f={
+  [&d='parse ignores RBACKUP_PATHS' &f={
     setup-env
     set-env RBACKUP_PATHS 'path1'$path:list-separator'path2'
     var opts sub paths = (flag:parse generate)
     tap:assert-expected $opts [&remote='' &help=$false &dry-run=$false &keep-count=1 &prefix=backup &junk-paths=$false &index=0]
     tap:assert-expected $sub "generate"
-    tap:assert-expected $paths [path1 path2]
+    tap:assert-expected $paths []
     unset-env RBACKUP_PATHS
   }]
   [&d='parse with environment RBACKUP_KEEP_COUNT' &f={

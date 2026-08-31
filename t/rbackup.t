@@ -13,6 +13,13 @@ fn setup-env {|tmpdir|
   var old-path = $E:PATH
   var old-xdg = (if (has-env XDG_CONFIG_HOME) { get-env XDG_CONFIG_HOME } else { put "" })
 
+  unset-env RBACKUP_ENCRYPT_PASSWORD
+  unset-env RBACKUP_FILE_PREFIX
+  unset-env RBACKUP_JUNK_PATHS
+  unset-env RBACKUP_KEEP_COUNT
+  unset-env RBACKUP_PATHS
+  unset-env RBACKUP_RCLONE_REMOTE
+
   mkdir -p $tmpdir/elvish/lib
   os:symlink $pwd/lib $tmpdir/elvish/lib/rbackup
 
@@ -259,9 +266,13 @@ tap:run [
     var tmpdir = (os:temp-dir)
     var old-path old-xdg = (setup-env $tmpdir)
 
-    set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
-    var err = ?(./rbackup fetch --remote myremote:folder -i 0 >/dev/null 2>&1)
+    var stdout-file = $tmpdir/stdout
+    var err = ?(./rbackup fetch --remote myremote:folder -i 0 >$stdout-file 2>/dev/null)
     tap:assert-expected $err $ok
+
+    var fetched-path = (str:trim-space (cat $stdout-file))
+    tap:assert (re:match '\.zip\.enc$' $fetched-path)
+    tap:assert (os:is-regular $fetched-path)
 
     var calls = [(cat $tmpdir/rclone-calls)]
     tap:assert (<= (count $calls) 2)
@@ -303,6 +314,88 @@ tap:run [
     for c $calls {
       tap:assert (not (re:match ".*delete.*" $c))
     }
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='decrypt subcommand extracts one encrypted archive without a remote' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var payload = $tmpdir/payload.txt
+    var archive = $tmpdir/archive.zip
+    var encrypted = $tmpdir/archive.zip.enc
+    echo "test-payload" > $payload
+    zip:compact $archive [$payload] >/dev/null 2>&1
+    openssl:encrypt $archive $encrypted "secret-pass"
+
+    set E:RBACKUP_ENCRYPT_PASSWORD = "secret-pass"
+    unset-env RBACKUP_RCLONE_REMOTE
+    var stdout-file = $tmpdir/stdout
+    var err = ?(./rbackup decrypt $encrypted >$stdout-file 2>/dev/null)
+    tap:assert-expected $err $ok
+
+    var target-dir = (str:trim-space (slurp < $stdout-file))
+    var extracted-payload = $target-dir$payload
+    tap:assert (os:is-regular $extracted-payload)
+    tap:assert-expected (str:trim-space (cat $extracted-payload)) "test-payload"
+    tap:assert (not (os:is-regular $tmpdir/rclone-calls))
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='decrypt fails when no path is specified' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    unset-env RBACKUP_RCLONE_REMOTE
+    set E:RBACKUP_PATHS = "fallback.zip.enc"
+    var err stderr = (run-rbackup-expect-fail decrypt)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "you need to specify just one path."
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='decrypt fails when multiple paths are specified' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    unset-env RBACKUP_RCLONE_REMOTE
+    var err stderr = (run-rbackup-expect-fail decrypt first.zip.enc second.zip.enc)
+    tap:assert (not-eq $err $ok)
+    tap:assert-expected $stderr "you need to specify just one path."
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='global help lists decrypt' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var output = (./rbackup --help | slurp)
+    tap:assert (re:match 'Subcommands: .*decrypt' $output)
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='decrypt help includes its required path' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var output = (./rbackup decrypt --help | slurp)
+    tap:assert (re:match 'Usage: rbackup decrypt FILE' $output)
+
+    teardown-env $tmpdir $old-path $old-xdg
+  }]
+
+  [&d='zsh completion lists and routes decrypt' &f={
+    var tmpdir = (os:temp-dir)
+    var old-path old-xdg = (setup-env $tmpdir)
+
+    var completion = (cat completions/zsh | slurp)
+    tap:assert (re:match "'decrypt'" $completion)
+    tap:assert (re:match '(?s)decrypt\).*_rbackup_decrypt' $completion)
 
     teardown-env $tmpdir $old-path $old-xdg
   }]
@@ -441,4 +534,3 @@ tap:run [
     teardown-env $tmpdir $old-path $old-xdg
   }]
 ]
-
